@@ -18,7 +18,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun CameraButton(
@@ -69,17 +71,9 @@ fun CameraButton(
             ) {
                 Text(
                     text = "\uD83D\uDCF7",
-                    fontSize = 32.dp
+                    fontSize = 32.sp
                 )
             }
         }
     }
-}
-
-@Composable
-private fun Text(text: String, fontSize: androidx.compose.ui.unit.TextUnit) {
-    androidx.compose.material3.Text(
-        text = text,
-        fontSize = fontSize
-    )
 }

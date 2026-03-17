@@ -1,0 +1,294 @@
+package com.example.plantastic.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.plantastic.data.ScanHistoryRepository
+import com.example.plantastic.ui.components.PlantasticTopBar
+
+@Composable
+fun ProfileScreen(
+    modifier: Modifier = Modifier
+) {
+    var showClearDialog by remember { mutableStateOf(false) }
+    val scanCount = ScanHistoryRepository.getScanResults().size
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        PlantasticTopBar(title = "Profile")
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+        ) {
+            // Profile Header
+            ProfileHeader()
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Stats Card
+            StatsCard(scanCount = scanCount)
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Settings Section
+            Text(
+                text = "Settings",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Delete,
+                title = "Clear History",
+                subtitle = "Delete all scan history",
+                onClick = { showClearDialog = true }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // About Section
+            Text(
+                text = "About",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Info,
+                title = "App Version",
+                subtitle = "1.0.0",
+                onClick = { }
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Settings,
+                title = "Plantastic",
+                subtitle = "AI-Powered Plant Disease Detection",
+                onClick = { }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Disclaimer
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xFFFFF3E0)
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "\uD83D\uDCA1",
+                        fontSize = 24.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Disclaimer",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "This app provides preliminary disease detection. For accurate diagnosis, please consult with a professional agricultural expert.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+    }
+
+    if (showClearDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDialog = false },
+            title = { Text("Clear History") },
+            text = { Text("Are you sure you want to delete all scan history? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        ScanHistoryRepository.clearHistory()
+                        showClearDialog = false
+                    }
+                ) {
+                    Text("Clear", color = Color(0xFFF44336))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun ProfileHeader() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF4CAF50)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "\uD83C\uDF3F",
+                    fontSize = 40.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column {
+                Text(
+                    text = "Plant User",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Plant Disease Detection",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatsCard(scanCount: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "$scanCount",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF4CAF50)
+                )
+                Text(
+                    text = "Total Scans",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsItem(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+        }
+    }
+}

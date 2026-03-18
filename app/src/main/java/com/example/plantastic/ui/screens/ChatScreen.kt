@@ -77,7 +77,8 @@ fun ChatScreen(
             addAll(saved.map { ChatMsg(it.text, it.isUser) })
         }
     }
-    var inputText by remember { mutableStateOf("") }
+    val inputTextState = remember { mutableStateOf("") }
+    var inputText: String by inputTextState
     var isLoading by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 

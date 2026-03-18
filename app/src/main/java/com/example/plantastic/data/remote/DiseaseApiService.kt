@@ -56,14 +56,23 @@ object ApiServiceProvider {
     private var api: DiseaseDetectionApi? = null
 
     private fun getApiConfig(): ApiConfig {
-        return if (SettingsRepository.isCustomApiConfigured()) {
-            ApiConfig(
-                apiKey = SettingsRepository.apiKey,
-                baseUrl = SettingsRepository.apiBaseUrl,
-                model = SettingsRepository.apiModel
-            )
-        } else {
-            // Fall back to BuildConfig
+        return try {
+            if (SettingsRepository.isCustomApiConfigured()) {
+                ApiConfig(
+                    apiKey = SettingsRepository.apiKey,
+                    baseUrl = SettingsRepository.apiBaseUrl,
+                    model = SettingsRepository.apiModel
+                )
+            } else {
+                // Fall back to BuildConfig
+                ApiConfig(
+                    apiKey = BuildConfig.API_KEY,
+                    baseUrl = BuildConfig.API_BASE_URL,
+                    model = BuildConfig.API_MODEL
+                )
+            }
+        } catch (e: Exception) {
+            // Fall back to BuildConfig if SettingsRepository is not initialized
             ApiConfig(
                 apiKey = BuildConfig.API_KEY,
                 baseUrl = BuildConfig.API_BASE_URL,

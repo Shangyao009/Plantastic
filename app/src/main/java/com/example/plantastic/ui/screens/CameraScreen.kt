@@ -10,6 +10,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -162,20 +167,58 @@ private fun CameraContent(
             )
         }
 
-        // Camera frame guide
+        // Camera frame guide - center square with corner brackets
+        val screenWidth = LocalContext.current.resources.displayMetrics.widthPixels
+        val squareSize = (screenWidth * 0.75f).dp
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(32.dp),
             contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(400.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color.Transparent)
-            )
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val canvasWidth = size.width
+                val canvasHeight = size.height
+                val centerX = canvasWidth / 2
+                val centerY = canvasHeight / 2
+                val squareSizePx = squareSize.toPx()
+                val halfSquare = squareSizePx / 2
+
+                // Draw semi-transparent dark overlay
+                drawRect(
+                    color = Color.Black.copy(alpha = 0.5f),
+                    size = Size(canvasWidth, canvasHeight)
+                )
+
+                // Clear the center square area (make it transparent)
+                drawRect(
+                    color = Color.Transparent,
+                    topLeft = Offset(centerX - halfSquare, centerY - halfSquare),
+                    size = Size(squareSizePx, squareSizePx)
+                )
+
+                // Draw corner brackets
+                val bracketLength = 40f
+                val bracketWidth = 6f
+                val cornerColor = Color.White
+
+                // Top-left corner
+                drawLine(cornerColor, Offset(centerX - halfSquare, centerY - halfSquare + bracketLength), Offset(centerX - halfSquare, centerY - halfSquare), strokeWidth = bracketWidth)
+                drawLine(cornerColor, Offset(centerX - halfSquare, centerY - halfSquare), Offset(centerX - halfSquare + bracketLength, centerY - halfSquare), strokeWidth = bracketWidth)
+
+                // Top-right corner
+                drawLine(cornerColor, Offset(centerX + halfSquare - bracketLength, centerY - halfSquare), Offset(centerX + halfSquare, centerY - halfSquare), strokeWidth = bracketWidth)
+                drawLine(cornerColor, Offset(centerX + halfSquare, centerY - halfSquare), Offset(centerX + halfSquare, centerY - halfSquare + bracketLength), strokeWidth = bracketWidth)
+
+                // Bottom-left corner
+                drawLine(cornerColor, Offset(centerX - halfSquare, centerY + halfSquare - bracketLength), Offset(centerX - halfSquare, centerY + halfSquare), strokeWidth = bracketWidth)
+                drawLine(cornerColor, Offset(centerX - halfSquare, centerY + halfSquare), Offset(centerX - halfSquare + bracketLength, centerY + halfSquare), strokeWidth = bracketWidth)
+
+                // Bottom-right corner
+                drawLine(cornerColor, Offset(centerX + halfSquare - bracketLength, centerY + halfSquare), Offset(centerX + halfSquare, centerY + halfSquare), strokeWidth = bracketWidth)
+                drawLine(cornerColor, Offset(centerX + halfSquare, centerY + halfSquare - bracketLength), Offset(centerX + halfSquare, centerY + halfSquare), strokeWidth = bracketWidth)
+            }
         }
 
         // Capture button

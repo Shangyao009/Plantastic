@@ -20,12 +20,16 @@ import com.example.plantastic.ui.screens.HistoryScreen
 import com.example.plantastic.ui.screens.HomeScreen
 import com.example.plantastic.ui.screens.ProfileScreen
 import com.example.plantastic.ui.screens.ResultScreen
+import com.example.plantastic.ui.screens.ScanResultDetailScreen
 
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
     data object Camera : Screen("camera")
     data object Result : Screen("result/{imageUri}") {
         fun createRoute(imageUri: Uri): String = "result/${Uri.encode(imageUri.toString())}"
+    }
+    data object ScanResultDetail : Screen("scan_result/{scanId}") {
+        fun createRoute(scanId: String): String = "scan_result/$scanId"
     }
     data object History : Screen("history")
     data object Profile : Screen("profile")
@@ -67,8 +71,7 @@ fun NavigationGraph(
                         navController.navigate(Screen.Camera.route)
                     },
                     onHistoryItemClick = { scanId ->
-                        // For now, just go back to home - could navigate to detail
-                        navController.navigate(Screen.Camera.route)
+                        navController.navigate(Screen.ScanResultDetail.createRoute(scanId))
                     }
                 )
             }
@@ -108,11 +111,30 @@ fun NavigationGraph(
                 )
             }
 
+            composable(
+                route = Screen.ScanResultDetail.route,
+                arguments = listOf(
+                    navArgument("scanId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val scanId = backStackEntry.arguments?.getString("scanId") ?: ""
+                ScanResultDetailScreen(
+                    scanId = scanId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onGoHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
             composable(Screen.History.route) {
                 HistoryScreen(
                     onItemClick = { scanId ->
-                        // For now, navigate to camera - could navigate to detail
-                        navController.navigate(Screen.Camera.route)
+                        navController.navigate(Screen.ScanResultDetail.createRoute(scanId))
                     }
                 )
             }

@@ -79,6 +79,10 @@ fun SettingsScreen(
 
     var showSaveSuccess by remember { mutableStateOf(false) }
 
+    // Unified API Test state
+    var isTesting by remember { mutableStateOf(false) }
+    var unifiedTestResult by remember { mutableStateOf<ApiTestResult?>(null) }
+
     // Detection API Test state
     var isTestingDetection by remember { mutableStateOf(false) }
     var detectionTestResult by remember { mutableStateOf<ApiTestResult?>(null) }
@@ -88,6 +92,53 @@ fun SettingsScreen(
     var chatTestResult by remember { mutableStateOf<ApiTestResult?>(null) }
 
     val scope = rememberCoroutineScope()
+
+    fun testUnifiedApi() {
+        if (apiKey.isBlank()) {
+            unifiedTestResult = ApiTestResult(false, "API key is empty")
+            return
+        }
+
+        scope.launch {
+            isTesting = true
+            unifiedTestResult = null
+
+            val result: ApiTestResult = withContext(Dispatchers.IO) {
+                try {
+                    SettingsRepository.useCustomApi = true
+                    SettingsRepository.useSeparateApis = false
+                    SettingsRepository.apiKey = apiKey
+                    SettingsRepository.apiBaseUrl = apiBaseUrl
+                    SettingsRepository.apiModel = apiModel
+                    ApiServiceProvider.recreate()
+
+                    val response = ApiServiceProvider.detectionApi.analyzePlantImage(
+                        ChatCompletionRequest(
+                            model = apiModel,
+                            messages = listOf(
+                                ChatMessage(
+                                    role = "user",
+                                    content = listOf(ContentItem.TextContent(text = "Hi"))
+                                )
+                            ),
+                            maxTokens = 10
+                        )
+                    )
+
+                    if (response.isSuccessful) {
+                        ApiTestResult(true, "API is accessible and working!")
+                    } else {
+                        ApiTestResult(false, "API error: ${response.code()} - ${response.message()}")
+                    }
+                } catch (e: Exception) {
+                    ApiTestResult(false, "Connection failed: ${e.message}")
+                }
+            }
+
+            unifiedTestResult = result
+            isTesting = false
+        }
+    }
 
     fun testDetectionApi() {
         if (detectionApiKey.isBlank()) {
@@ -405,11 +456,17 @@ fun SettingsScreen(
 
                     // Test API Button
                     TestApiButton(
-                        isTesting = false,
+                        isTesting = isTesting,
                         enabled = apiKey.isNotBlank(),
-                        onClick = { },
+                        onClick = { testUnifiedApi() },
                         buttonText = "Test API Connection"
                     )
+
+                    // Test Result
+                    unifiedTestResult?.let { result ->
+                        Spacer(modifier = Modifier.height(12.dp))
+                        TestResultCard(result = result)
+                    }
 
                     Spacer(modifier = Modifier.height(24.dp))
                 }

@@ -2,6 +2,8 @@ package com.example.plantastic.ui.screens
 
 import android.Manifest
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -14,15 +16,12 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -40,9 +39,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
@@ -57,6 +57,7 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.Executor
@@ -113,7 +114,13 @@ private fun CameraContent(
 
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
 
+    // Square size as a fraction of screen width
+    val displayMetrics = context.resources.displayMetrics
+    val screenWidthPx = displayMetrics.widthPixels
+    val squareSizePx = (screenWidthPx * 0.75f).toInt()
+
     Box(modifier = Modifier.fillMaxSize()) {
+        // ── Camera preview ────────────────────────────────────────────────
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).apply {
@@ -134,13 +141,11 @@ private fun CameraContent(
                         .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                         .build()
 
-                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
                     try {
                         cameraProvider.unbindAll()
                         cameraProvider.bindToLifecycle(
                             lifecycleOwner,
-                            cameraSelector,
+                            CameraSelector.DEFAULT_BACK_CAMERA,
                             preview,
                             imageCapture
                         )
@@ -151,7 +156,70 @@ private fun CameraContent(
             }
         )
 
-        // Back button
+        // ── Dark overlay with punched-out square ──────────────────────────
+        //
+        // The key fix: use drawIntoCanvas + saveLayer so that BlendMode.Clear
+        // actually erases pixels from the overlay layer rather than painting
+        // transparent on top of the camera feed (which does nothing visible).
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val canvasW = size.width
+            val canvasH = size.height
+            val sqSize  = canvasW * 0.75f
+            val left    = (canvasW - sqSize) / 2f
+            val top     = (canvasH - sqSize) / 2f
+
+            drawIntoCanvas { canvas ->
+                // 1. Save a new layer covering the whole canvas
+                canvas.nativeCanvas.saveLayer(
+                    android.graphics.RectF(0f, 0f, canvasW, canvasH),
+                    null
+                )
+
+                // 2. Draw the dark overlay across the entire canvas
+                drawRect(color = Color.Black.copy(alpha = 0.55f))
+
+                // 3. Punch a transparent hole in the centre using BlendMode.Clear
+                drawRect(
+                    color = Color.Black,        // colour is irrelevant with Clear
+                    topLeft = Offset(left, top),
+                    size    = Size(sqSize, sqSize),
+                    blendMode = BlendMode.Clear
+                )
+
+                // 4. Restore the layer so it composites over the camera preview
+                canvas.nativeCanvas.restore()
+            }
+
+            // ── Corner brackets ───────────────────────────────────────────
+            val cornerLen   = sqSize * 0.12f
+            val strokeWidth = 4.dp.toPx()
+            val right  = left + sqSize
+            val bottom = top  + sqSize
+
+            listOf(
+                // top-left
+                Offset(left, top + cornerLen) to Offset(left, top),
+                Offset(left, top) to Offset(left + cornerLen, top),
+                // top-right
+                Offset(right - cornerLen, top) to Offset(right, top),
+                Offset(right, top) to Offset(right, top + cornerLen),
+                // bottom-left
+                Offset(left, bottom - cornerLen) to Offset(left, bottom),
+                Offset(left, bottom) to Offset(left + cornerLen, bottom),
+                // bottom-right
+                Offset(right - cornerLen, bottom) to Offset(right, bottom),
+                Offset(right, bottom - cornerLen) to Offset(right, bottom)
+            ).forEach { (start, end) ->
+                drawLine(
+                    color       = Color.White,
+                    start       = start,
+                    end         = end,
+                    strokeWidth = strokeWidth
+                )
+            }
+        }
+
+        // ── Back button ───────────────────────────────────────────────────
         IconButton(
             onClick = onNavigateBack,
             modifier = Modifier
@@ -167,101 +235,18 @@ private fun CameraContent(
             )
         }
 
-        // Camera frame - dark overlay with clear center square and visible border
-        val screenWidth = LocalContext.current.resources.displayMetrics.widthPixels
-        val squareSize = (screenWidth * 0.75f).dp
-
-        Box(
+        // ── Instruction text ──────────────────────────────────────────────
+        Text(
+            text = "Scan your plant",
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val canvasWidth = size.width
-                val canvasHeight = size.height
-                val centerX = canvasWidth / 2
-                val centerY = canvasHeight / 2
-                val squareSizePx = squareSize.toPx()
-                val halfSquare = squareSizePx / 2
-                val cornerLength = squareSizePx * 0.15f
-                val strokeWidth = 4.dp.toPx()
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 140.dp)
+        )
 
-                // Draw semi-transparent dark overlay
-                drawRect(
-                    color = Color.Black.copy(alpha = 0.5f),
-                    size = Size(canvasWidth, canvasHeight)
-                )
-
-                // Clear the center square area (make it transparent to show camera)
-                drawRect(
-                    color = Color.Transparent,
-                    topLeft = Offset(centerX - halfSquare, centerY - halfSquare),
-                    size = Size(squareSizePx, squareSizePx)
-                )
-
-                // Draw corner brackets (viewfinder style)
-                val cornerColor = Color.White
-
-                // Top-left corner
-                drawLine(
-                    color = cornerColor,
-                    start = Offset(centerX - halfSquare, centerY - halfSquare + cornerLength),
-                    end = Offset(centerX - halfSquare, centerY - halfSquare),
-                    strokeWidth = strokeWidth
-                )
-                drawLine(
-                    color = cornerColor,
-                    start = Offset(centerX - halfSquare, centerY - halfSquare),
-                    end = Offset(centerX - halfSquare + cornerLength, centerY - halfSquare),
-                    strokeWidth = strokeWidth
-                )
-
-                // Top-right corner
-                drawLine(
-                    color = cornerColor,
-                    start = Offset(centerX + halfSquare - cornerLength, centerY - halfSquare),
-                    end = Offset(centerX + halfSquare, centerY - halfSquare),
-                    strokeWidth = strokeWidth
-                )
-                drawLine(
-                    color = cornerColor,
-                    start = Offset(centerX + halfSquare, centerY - halfSquare),
-                    end = Offset(centerX + halfSquare, centerY - halfSquare + cornerLength),
-                    strokeWidth = strokeWidth
-                )
-
-                // Bottom-left corner
-                drawLine(
-                    color = cornerColor,
-                    start = Offset(centerX - halfSquare, centerY + halfSquare - cornerLength),
-                    end = Offset(centerX - halfSquare, centerY + halfSquare),
-                    strokeWidth = strokeWidth
-                )
-                drawLine(
-                    color = cornerColor,
-                    start = Offset(centerX - halfSquare, centerY + halfSquare),
-                    end = Offset(centerX - halfSquare + cornerLength, centerY + halfSquare),
-                    strokeWidth = strokeWidth
-                )
-
-                // Bottom-right corner
-                drawLine(
-                    color = cornerColor,
-                    start = Offset(centerX + halfSquare - cornerLength, centerY + halfSquare),
-                    end = Offset(centerX + halfSquare, centerY + halfSquare),
-                    strokeWidth = strokeWidth
-                )
-                drawLine(
-                    color = cornerColor,
-                    start = Offset(centerX + halfSquare, centerY + halfSquare - cornerLength),
-                    end = Offset(centerX + halfSquare, centerY + halfSquare),
-                    strokeWidth = strokeWidth
-                )
-            }
-        }
-
-        // Capture button
+        // ── Shutter button ────────────────────────────────────────────────
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -271,11 +256,12 @@ private fun CameraContent(
                 onClick = {
                     imageCapture?.let { capture ->
                         takePhoto(
-                            context = context,
-                            imageCapture = capture,
-                            executor = ContextCompat.getMainExecutor(context),
+                            context         = context,
+                            imageCapture    = capture,
+                            squareSizePx    = squareSizePx,
+                            executor        = ContextCompat.getMainExecutor(context),
                             onImageCaptured = onImageCaptured,
-                            onError = { /* Handle error */ }
+                            onError         = { /* Handle error */ }
                         )
                     }
                 },
@@ -284,7 +270,6 @@ private fun CameraContent(
                     .clip(CircleShape)
                     .background(Color.Transparent)
             ) {
-                // White border ring
                 Box(
                     modifier = Modifier
                         .size(80.dp)
@@ -292,7 +277,6 @@ private fun CameraContent(
                         .background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Inner green circle
                     Box(
                         modifier = Modifier
                             .size(64.dp)
@@ -300,26 +284,15 @@ private fun CameraContent(
                             .background(Color(0xFF4CAF50)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "\uD83D\uDCF7",
-                            fontSize = 32.sp
-                        )
+                        Text(text = "\uD83D\uDCF7", fontSize = 32.sp)
                     }
                 }
             }
         }
-
-        // Instruction text at bottom
-        Text(
-            text = "Scan your plant",
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 140.dp))
     }
 }
+
+// ── Permission screens (unchanged) ────────────────────────────────────────────
 
 @Composable
 private fun PermissionRationale(
@@ -334,16 +307,9 @@ private fun PermissionRationale(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "\uD83D\uDCF7",
-            fontSize = 64.sp
-        )
+        Text(text = "\uD83D\uDCF7", fontSize = 64.sp)
         Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = "Camera Permission Required",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text(text = "Camera Permission Required", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "To scan plants, we need access to your camera to take photos of leaves.",
@@ -353,16 +319,10 @@ private fun PermissionRationale(
         Spacer(modifier = Modifier.height(32.dp))
         Button(
             onClick = onRequestPermission,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4CAF50)
-            )
-        ) {
-            Text("Grant Permission")
-        }
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+        ) { Text("Grant Permission") }
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onNavigateBack) {
-            Text("Go Back")
-        }
+        Button(onClick = onNavigateBack) { Text("Go Back") }
     }
 }
 
@@ -376,16 +336,9 @@ private fun PermissionDenied(onNavigateBack: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "\uD83D\uDE1E",
-            fontSize = 64.sp
-        )
+        Text(text = "\uD83D\uDE1E", fontSize = 64.sp)
         Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = "Camera Permission Denied",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text(text = "Camera Permission Denied", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Please enable camera permission in your device settings to use this feature.",
@@ -393,25 +346,28 @@ private fun PermissionDenied(onNavigateBack: () -> Unit) {
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
         )
         Spacer(modifier = Modifier.height(32.dp))
-        Button(onClick = onNavigateBack) {
-            Text("Go Back")
-        }
+        Button(onClick = onNavigateBack) { Text("Go Back") }
     }
 }
 
+// ── Photo capture + crop ──────────────────────────────────────────────────────
+
+/**
+ * Takes a full photo then crops it to the square region that matches the
+ * viewfinder overlay, so [onImageCaptured] receives only the plant area.
+ */
 private fun takePhoto(
     context: Context,
     imageCapture: ImageCapture,
+    squareSizePx: Int,          // screen-space side length of the viewfinder square
     executor: Executor,
     onImageCaptured: (Uri) -> Unit,
     onError: (ImageCaptureException) -> Unit
 ) {
-    val photoFile = File(
-        context.cacheDir,
-        SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
-            .format(System.currentTimeMillis()) + ".jpg"
-    )
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+        .format(System.currentTimeMillis())
 
+    val photoFile = File(context.cacheDir, "${timestamp}_full.jpg")
     val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
     imageCapture.takePicture(
@@ -419,13 +375,55 @@ private fun takePhoto(
         executor,
         object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                val savedUri = Uri.fromFile(photoFile)
-                onImageCaptured(savedUri)
+                // Crop the saved bitmap to only the square region
+                val croppedUri = cropToSquare(
+                    context      = context,
+                    sourceFile   = photoFile,
+                    squareSizePx = squareSizePx,
+                    timestamp    = timestamp
+                )
+                onImageCaptured(croppedUri)
             }
 
-            override fun onError(exception: ImageCaptureException) {
-                onError(exception)
-            }
+            override fun onError(exception: ImageCaptureException) = onError(exception)
         }
     )
+}
+
+/**
+ * Decodes [sourceFile], crops a centred square whose side length in the
+ * image coordinates corresponds to [squareSizePx] on-screen, saves the
+ * result and returns its [Uri].
+ *
+ * The viewfinder square occupies 75 % of the screen width and is centred,
+ * so we apply the same ratio to the captured image dimensions.
+ */
+private fun cropToSquare(
+    context: Context,
+    sourceFile: File,
+    squareSizePx: Int,
+    timestamp: String
+): Uri {
+    val original = BitmapFactory.decodeFile(sourceFile.absolutePath)
+
+    // The overlay square is 75 % of screen width, centred.
+    // Map that fraction to the bitmap's shorter dimension.
+    val bitmapMin = minOf(original.width, original.height)
+    val cropSize  = (bitmapMin * 0.75f).toInt()
+
+    // Centre the crop in the bitmap
+    val cropX = (original.width  - cropSize) / 2
+    val cropY = (original.height - cropSize) / 2
+
+    val cropped = Bitmap.createBitmap(original, cropX, cropY, cropSize, cropSize)
+    original.recycle()
+
+    // Save the cropped image
+    val croppedFile = File(context.cacheDir, "${timestamp}_cropped.jpg")
+    FileOutputStream(croppedFile).use { out ->
+        cropped.compress(Bitmap.CompressFormat.JPEG, 95, out)
+    }
+    cropped.recycle()
+
+    return Uri.fromFile(croppedFile)
 }

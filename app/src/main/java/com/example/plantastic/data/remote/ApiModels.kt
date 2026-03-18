@@ -20,18 +20,19 @@ data class ChatMessage(
     @Json(name = "content") val content: List<ContentItem>
 )
 
-@JsonClass(generateAdapter = true)
+/**
+ * Sealed class for content items in chat messages.
+ * Uses Moshi's KotlinJsonAdapterFactory for serialization.
+ */
 sealed class ContentItem {
-    @JsonClass(generateAdapter = true)
     data class TextContent(
-        @Json(name = "type") val type: String = "text",
-        @Json(name = "text") val text: String
+        val type: String = "text",
+        val text: String
     ) : ContentItem()
 
-    @JsonClass(generateAdapter = true)
     data class ImageContent(
-        @Json(name = "type") val type: String = "image_url",
-        @Json(name = "image_url") val imageUrl: ImageUrl
+        val type: String = "image_url",
+        val imageUrl: ImageUrl
     ) : ContentItem()
 }
 

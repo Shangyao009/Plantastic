@@ -32,7 +32,7 @@ interface DiseaseDetectionApi {
 object ApiServiceProvider {
 
     val moshi: Moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
+        .addLast(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory())
         .build()
 
     // Separate Retrofit and API instances for detection and chat

@@ -86,7 +86,7 @@ If the plant appears healthy, return:
 }"""
                 ),
                 ContentItem.ImageContent(
-                    ImageUrl("data:image/jpeg;base64,$base64Image")
+                    imageUrl = ImageUrl(url = "data:image/jpeg;base64,$base64Image")
                 )
             )
 

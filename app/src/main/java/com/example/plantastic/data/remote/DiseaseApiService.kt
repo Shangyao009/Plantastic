@@ -53,7 +53,7 @@ object ApiServiceProvider {
         .build()
 
     private var retrofit: Retrofit? = null
-    private var api: DiseaseDetectionApi? = null
+    private var diseaseApiInstance: DiseaseDetectionApi? = null
 
     private fun getApiConfig(): ApiConfig {
         return try {
@@ -92,7 +92,7 @@ object ApiServiceProvider {
     }
 
     val diseaseApi: DiseaseDetectionApi
-        get() = api ?: getRetrofit().create(DiseaseDetectionApi::class.java).also { api = it }
+        get() = diseaseApiInstance ?: getRetrofit().create(DiseaseDetectionApi::class.java).also { diseaseApiInstance = it }
 
     // For backward compatibility
     @Deprecated("Use diseaseApi instead", ReplaceWith("diseaseApi"))
@@ -107,7 +107,7 @@ object ApiServiceProvider {
      */
     fun recreate() {
         retrofit = null
-        api = null
+        diseaseApiInstance = null
     }
 
     data class ApiConfig(

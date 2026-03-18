@@ -4,9 +4,9 @@ plugins {
 }
 
 // Read API configuration from gradle.properties
-def apiKey = properties.getProperty("PLANTASIC_API_KEY", "YOUR_API_KEY_HERE")
-def apiBaseUrl = properties.getProperty("PLANTASIC_API_BASE_URL", "https://api.openai.com/")
-def apiModel = properties.getProperty("PLANTASIC_API_MODEL", "gpt-4o")
+val apiKey: String = project.findProperty("PLANTASIC_API_KEY") as? String ?: "YOUR_API_KEY_HERE"
+val apiBaseUrl: String = project.findProperty("PLANTASIC_API_BASE_URL") as? String ?: "https://api.openai.com/"
+val apiModel: String = project.findProperty("PLANTASIC_API_MODEL") as? String ?: "gpt-4o"
 
 android {
     namespace = "com.example.plantastic"

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -149,7 +150,9 @@ private fun TreatmentItem(
                         text = "Application",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextSecondary
+                        color = TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = treatment.applicationMethod,
@@ -161,17 +164,22 @@ private fun TreatmentItem(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(
+                    modifier = Modifier.widthIn(min = 80.dp),
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(
                         text = "Frequency",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextSecondary
+                        color = TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = treatment.frequency,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

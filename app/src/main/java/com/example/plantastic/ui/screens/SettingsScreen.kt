@@ -2,24 +2,31 @@ package com.example.plantastic.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -28,16 +35,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.plantastic.data.SettingsRepository
+import com.example.plantastic.data.remote.ChatCompletionRequest
+import com.example.plantastic.data.remote.ChatMessage
+import com.example.plantastic.data.remote.ContentItem
+import com.example.plantastic.data.remote.ApiServiceProvider
 import com.example.plantastic.ui.components.PlantasticTopBar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+// Test result data class
+private data class ApiTestResult(val success: Boolean, val message: String)
 
 @Composable
 fun SettingsScreen(
@@ -49,6 +68,72 @@ fun SettingsScreen(
     var apiBaseUrl by remember { mutableStateOf(SettingsRepository.apiBaseUrl) }
     var apiModel by remember { mutableStateOf(SettingsRepository.apiModel) }
     var showSaveSuccess by remember { mutableStateOf(false) }
+
+    // API Test state
+    var isTesting by remember { mutableStateOf(false) }
+    var testResult by remember { mutableStateOf<ApiTestResult?>(null) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    fun testApi() {
+        if (apiKey.isBlank()) {
+            testResult = ApiTestResult(false, "API key is empty")
+            return
+        }
+
+        scope.launch {
+            isTesting = true
+            testResult = null
+
+            val result: ApiTestResult = withContext(Dispatchers.IO) {
+                try {
+                    // Temporarily save settings to test
+                    val originalUseCustomApi = SettingsRepository.useCustomApi
+                    val originalApiKey = SettingsRepository.apiKey
+                    val originalBaseUrl = SettingsRepository.apiBaseUrl
+                    val originalModel = SettingsRepository.apiModel
+
+                    SettingsRepository.useCustomApi = true
+                    SettingsRepository.apiKey = apiKey
+                    SettingsRepository.apiBaseUrl = apiBaseUrl
+                    SettingsRepository.apiModel = apiModel
+
+                    ApiServiceProvider.recreate()
+
+                    val response = ApiServiceProvider.diseaseApi.analyzePlantImage(
+                        ChatCompletionRequest(
+                            model = apiModel,
+                            messages = listOf(
+                                ChatMessage(
+                                    role = "user",
+                                    content = listOf(ContentItem.TextContent(text = "Hi"))
+                                )
+                            ),
+                            maxTokens = 10
+                        )
+                    )
+
+                    // Restore original settings
+                    SettingsRepository.useCustomApi = originalUseCustomApi
+                    SettingsRepository.apiKey = originalApiKey
+                    SettingsRepository.apiBaseUrl = originalBaseUrl
+                    SettingsRepository.apiModel = originalModel
+                    ApiServiceProvider.recreate()
+
+                    if (response.isSuccessful) {
+                        ApiTestResult(true, "API is accessible and working!")
+                    } else {
+                        ApiTestResult(false, "API error: ${response.code()} - ${response.message()}")
+                    }
+                } catch (e: Exception) {
+                    ApiTestResult(false, "Connection failed: ${e.message}")
+                }
+            }
+
+            testResult = result
+            isTesting = false
+        }
+    }
 
     Column(
         modifier = modifier
@@ -297,6 +382,69 @@ fun SettingsScreen(
                         color = Color(0xFF4CAF50),
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Test API Button
+                OutlinedButton(
+                    onClick = { testApi() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = !isTesting && apiKey.isNotBlank(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (isTesting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Testing...")
+                    } else {
+                        Text(
+                            text = "Test API Connection",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Test Result
+                if (testResult != null) {
+                    val result = testResult!!
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (result.success)
+                                Color(0xFF4CAF50).copy(alpha = 0.1f)
+                            else
+                                Color(0xFFF44336).copy(alpha = 0.1f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (result.success) Icons.Default.Check else Icons.Default.Close,
+                                contentDescription = null,
+                                tint = if (result.success) Color(0xFF4CAF50) else Color(0xFFF44336),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = result.message,
+                                fontSize = 14.sp,
+                                color = if (result.success) Color(0xFF4CAF50) else Color(0xFFF44336)
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))

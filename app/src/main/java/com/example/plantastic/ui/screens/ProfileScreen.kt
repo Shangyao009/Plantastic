@@ -58,7 +58,10 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     var showClearDialog by remember { mutableStateOf(false) }
-    val scanCount = ScanHistoryRepository.getScanResults().size
+    val scanResults = ScanHistoryRepository.getScanResults()
+    val scanCount = scanResults.size
+    val healthyCount = scanResults.count { it.disease.name == "Healthy" }
+    val diseaseCount = scanResults.count { it.disease.name != "Healthy" }
 
     Column(
         modifier = modifier
@@ -147,14 +150,14 @@ fun ProfileScreen(
                 QuickActionCard(
                     icon = "\u2705",
                     title = "Healthy",
-                    value = "${scanCount}",
+                    value = "$healthyCount",
                     color = GradientStart,
                     modifier = Modifier.weight(1f)
                 )
                 QuickActionCard(
                     icon = "\uD83D\uDCA5",
                     title = "Diseases",
-                    value = "0",
+                    value = "$diseaseCount",
                     color = DiseaseRed,
                     modifier = Modifier.weight(1f)
                 )

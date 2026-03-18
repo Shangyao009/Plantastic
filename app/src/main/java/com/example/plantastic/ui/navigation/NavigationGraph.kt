@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.plantastic.ui.components.BottomNavigationBar
 import com.example.plantastic.ui.screens.CameraScreen
+import com.example.plantastic.ui.screens.ChatScreen
 import com.example.plantastic.ui.screens.HistoryScreen
 import com.example.plantastic.ui.screens.HomeScreen
 import com.example.plantastic.ui.screens.ProfileScreen
@@ -35,6 +36,9 @@ sealed class Screen(val route: String) {
     data object History : Screen("history")
     data object Profile : Screen("profile")
     data object Settings : Screen("settings")
+    data object Chat : Screen("chat/{scanId}") {
+        fun createRoute(scanId: String): String = "chat/$scanId"
+    }
 }
 
 @Composable
@@ -74,6 +78,9 @@ fun NavigationGraph(
                     },
                     onHistoryItemClick = { scanId ->
                         navController.navigate(Screen.ScanResultDetail.createRoute(scanId))
+                    },
+                    onChatClick = { scanId ->
+                        navController.navigate(Screen.Chat.createRoute(scanId))
                     }
                 )
             }
@@ -137,6 +144,9 @@ fun NavigationGraph(
                 HistoryScreen(
                     onItemClick = { scanId ->
                         navController.navigate(Screen.ScanResultDetail.createRoute(scanId))
+                    },
+                    onChatClick = { scanId ->
+                        navController.navigate(Screen.Chat.createRoute(scanId))
                     }
                 )
             }
@@ -151,6 +161,21 @@ fun NavigationGraph(
 
             composable(Screen.Settings.route) {
                 SettingsScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            composable(
+                route = Screen.Chat.route,
+                arguments = listOf(
+                    navArgument("scanId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val scanId = backStackEntry.arguments?.getString("scanId") ?: ""
+                ChatScreen(
+                    scanId = scanId,
                     onNavigateBack = {
                         navController.popBackStack()
                     }

@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.plantastic.data.model.Treatment
 import com.example.plantastic.data.model.TreatmentType
+import com.example.plantastic.ui.theme.GradientStart
+import com.example.plantastic.ui.theme.TextSecondary
 
 @Composable
 fun TreatmentList(
@@ -33,19 +35,30 @@ fun TreatmentList(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = "Treatment Recommendations",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+        Row(
+            modifier = Modifier.padding(bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Treatment Recommendations",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            if (treatments.isNotEmpty()) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "\uD83D\uDCA1",
+                    fontSize = 16.sp
+                )
+            }
+        }
 
         if (treatments.isEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f)
+                    containerColor = GradientStart.copy(alpha = 0.1f)
                 )
             ) {
                 Row(
@@ -57,10 +70,19 @@ fun TreatmentList(
                         fontSize = 24.sp
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "No treatment needed! Your plant is healthy.",
-                        fontSize = 14.sp
-                    )
+                    Column {
+                        Text(
+                            text = "No treatment needed!",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = GradientStart
+                        )
+                        Text(
+                            text = "Your plant is healthy and thriving.",
+                            fontSize = 13.sp,
+                            color = TextSecondary
+                        )
+                    }
                 }
             }
         } else {
@@ -79,14 +101,14 @@ private fun TreatmentItem(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             // Header row with type badge and name
             Row(
@@ -94,24 +116,25 @@ private fun TreatmentItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TreatmentTypeBadge(type = treatment.type)
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = treatment.name,
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Description
             Text(
                 text = treatment.description,
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                color = TextSecondary,
                 maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 18.sp
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -126,14 +149,14 @@ private fun TreatmentItem(
                         text = "Application",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = TextSecondary
                     )
                     Text(
                         text = treatment.applicationMethod,
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         maxLines = 4,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 16.sp
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
@@ -144,12 +167,11 @@ private fun TreatmentItem(
                         text = "Frequency",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = TextSecondary
                     )
                     Text(
                         text = treatment.frequency,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                        fontSize = 12.sp
                     )
                 }
             }
@@ -162,36 +184,45 @@ private fun TreatmentTypeBadge(
     type: TreatmentType,
     modifier: Modifier = Modifier
 ) {
-    val (backgroundColor, textColor, text) = when (type) {
-        TreatmentType.CHEMICAL -> Triple(
-            Color(0xFFFF9800).copy(alpha = 0.2f),
-            Color(0xFFFF9800),
-            "Chemical"
+    val (backgroundColor, textColor, text, emoji) = when (type) {
+        TreatmentType.CHEMICAL -> TreatmentTypeStyle(
+            backgroundColor = Color(0xFFFF9800).copy(alpha = 0.15f),
+            textColor = Color(0xFFE65100),
+            text = "Chemical",
+            emoji = "\u2692\uFE0F"
         )
-        TreatmentType.ORGANIC -> Triple(
-            Color(0xFF4CAF50).copy(alpha = 0.2f),
-            Color(0xFF4CAF50),
-            "Organic"
+        TreatmentType.ORGANIC -> TreatmentTypeStyle(
+            backgroundColor = GradientStart.copy(alpha = 0.15f),
+            textColor = GradientStart,
+            text = "Organic",
+            emoji = "\uD83C\uDF3F"
         )
     }
 
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = if (type == TreatmentType.CHEMICAL) "\u2692\uFE0F" else "\uD83C\uDF3F",
-            fontSize = 10.sp
+            text = emoji,
+            fontSize = 12.sp
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = text,
-            fontSize = 10.sp,
+            fontSize = 11.sp,
             color = textColor,
             fontWeight = FontWeight.Bold
         )
     }
 }
+
+private data class TreatmentTypeStyle(
+    val backgroundColor: Color,
+    val textColor: Color,
+    val text: String,
+    val emoji: String
+)

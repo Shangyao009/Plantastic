@@ -21,11 +21,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.plantastic.ui.theme.GradientEnd
+import com.example.plantastic.ui.theme.GradientStart
 
 sealed class BottomNavItem(
     val route: String,
@@ -54,7 +57,7 @@ fun BottomNavigationBar(
             .fillMaxWidth()
             .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -65,7 +68,7 @@ fun BottomNavigationBar(
 
                 val iconColor by animateColorAsState(
                     targetValue = if (isSelected)
-                        MaterialTheme.colorScheme.primary
+                        GradientStart
                     else
                         Color.Gray,
                     label = "icon_color"
@@ -73,7 +76,7 @@ fun BottomNavigationBar(
 
                 Column(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .clickable {
                             if (currentRoute != item.route) {
                                 navController.navigate(item.route) {
@@ -85,7 +88,21 @@ fun BottomNavigationBar(
                                 }
                             }
                         }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .background(
+                            if (isSelected)
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        GradientStart.copy(alpha = 0.1f),
+                                        GradientEnd.copy(alpha = 0.1f)
+                                    )
+                                )
+                            else
+                                Brush.linearGradient(
+                                    colors = listOf(Color.Transparent, Color.Transparent)
+                                ),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(

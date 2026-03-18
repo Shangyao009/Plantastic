@@ -46,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -63,6 +64,10 @@ import com.example.plantastic.ui.components.AffectedAreaOverlay
 import com.example.plantastic.ui.components.DiseaseCard
 import com.example.plantastic.ui.components.TreatmentList
 import com.example.plantastic.ui.components.generateMockAffectedAreas
+import com.example.plantastic.ui.theme.GradientEnd
+import com.example.plantastic.ui.theme.GradientStart
+import com.example.plantastic.ui.theme.HealthyGreen
+import com.example.plantastic.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -166,7 +171,7 @@ private fun NotPlantContent(
             else
                 "The image doesn't appear to be a plant-related subject.\n\nPlease capture an image of a plant, leaf, flower, fruit, vegetable, mushroom, or other plant-related subject.",
             fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            color = TextSecondary,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         Spacer(modifier = Modifier.height(32.dp))
@@ -180,7 +185,7 @@ private fun NotPlantContent(
         Spacer(modifier = Modifier.height(12.dp))
         Button(
             onClick = onScanAgain,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+            colors = ButtonDefaults.buttonColors(containerColor = GradientStart),
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Scan Another")
@@ -201,11 +206,15 @@ private fun LoadingContent() {
             modifier = Modifier
                 .size(120.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF4CAF50).copy(alpha = 0.1f)),
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(GradientStart.copy(alpha = 0.15f), GradientEnd.copy(alpha = 0.15f))
+                    )
+                ),
             contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator(
-                color = Color(0xFF4CAF50),
+                color = GradientStart,
                 modifier = Modifier.size(60.dp)
             )
         }
@@ -223,7 +232,7 @@ private fun LoadingContent() {
         Text(
             text = "Our AI is examining the leaf for signs of disease",
             fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            color = TextSecondary
         )
     }
 }
@@ -291,7 +300,7 @@ private fun ResultContent(
                     Box(
                         modifier = Modifier
                             .background(
-                                Color(0xFF4CAF50).copy(alpha = 0.1f),
+                                GradientStart.copy(alpha = 0.1f),
                                 RoundedCornerShape(8.dp)
                             )
                             .padding(horizontal = 12.dp, vertical = 6.dp)
@@ -339,7 +348,7 @@ private fun ResultContent(
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4CAF50)
+                    containerColor = GradientStart
                 ),
                 shape = RoundedCornerShape(16.dp)
             ) {
@@ -441,7 +450,7 @@ fun ScanResultDetailScreen(
                 Text(
                     text = formatTimestamp(scanResult.timestamp),
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    color = TextSecondary
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -471,7 +480,7 @@ fun ScanResultDetailScreen(
                         .fillMaxWidth()
                         .height(56.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4CAF50)
+                        containerColor = GradientStart
                     ),
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -550,7 +559,7 @@ private fun ChatSection(
             Text(
                 text = "Ask questions like: What treatments do you recommend? How can I prevent this disease?",
                 fontSize = 14.sp,
-                color = Color.Gray,
+                color = TextSecondary,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
         } else {
@@ -618,7 +627,7 @@ private fun ChatSection(
                 },
                 modifier = Modifier
                     .size(48.dp)
-                    .background(Color(0xFF4CAF50), CircleShape)
+                    .background(Brush.linearGradient(colors = listOf(GradientStart, GradientEnd)), CircleShape)
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -650,7 +659,7 @@ private fun ChatBubble(message: ChatMessageItem) {
             modifier = Modifier
                 .widthIn(max = 280.dp)
                 .background(
-                    if (message.isUser) Color(0xFF4CAF50) else Color.White,
+                    if (message.isUser) GradientStart else Color.White,
                     RoundedCornerShape(
                         topStart = 16.dp,
                         topEnd = 16.dp,

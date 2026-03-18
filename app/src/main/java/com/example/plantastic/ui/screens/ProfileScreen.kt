@@ -35,13 +35,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.plantastic.data.ScanHistoryRepository
-import com.example.plantastic.ui.components.PlantasticTopBar
+import com.example.plantastic.ui.theme.AccentBlue
+import com.example.plantastic.ui.theme.AccentBlueLight
+import com.example.plantastic.ui.theme.DiseaseRed
+import com.example.plantastic.ui.theme.GradientEnd
+import com.example.plantastic.ui.theme.GradientStart
+import com.example.plantastic.ui.theme.HealthyGreen
+import com.example.plantastic.ui.theme.TextSecondary
+import com.example.plantastic.ui.theme.WarningOrange
+import com.example.plantastic.ui.theme.WarningOrangeDark
 
 @Composable
 fun ProfileScreen(
@@ -56,21 +65,100 @@ fun ProfileScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        PlantasticTopBar(title = "Profile")
+        // Gradient Header
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(GradientStart, GradientEnd)
+                    )
+                )
+                .padding(top = 48.dp, bottom = 32.dp, start = 20.dp, end = 20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Avatar
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "\uD83C\uDF3F",
+                        fontSize = 40.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column {
+                    Text(
+                        text = "Plant User",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Plant Disease Detection",
+                        fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
+                }
+            }
+        }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
         ) {
-            // Profile Header
-            ProfileHeader()
-
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Stats Card
             StatsCard(scanCount = scanCount)
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Quick Actions Section
+            Text(
+                text = "Quick Actions",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                QuickActionCard(
+                    icon = "\uD83D\uDD2D",
+                    title = "Total Scans",
+                    value = "$scanCount",
+                    color = HealthyGreen,
+                    modifier = Modifier.weight(1f)
+                )
+                QuickActionCard(
+                    icon = "\u2705",
+                    title = "Healthy",
+                    value = "${scanCount}",
+                    color = GradientStart,
+                    modifier = Modifier.weight(1f)
+                )
+                QuickActionCard(
+                    icon = "\uD83D\uDCA5",
+                    title = "Diseases",
+                    value = "0",
+                    color = DiseaseRed,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -83,17 +171,23 @@ fun ProfileScreen(
             )
 
             SettingsItem(
-                icon = Icons.Default.Delete,
-                title = "Clear History",
-                subtitle = "Delete all scan history",
-                onClick = { showClearDialog = true }
-            )
-
-            SettingsItem(
                 icon = Icons.Default.Settings,
                 title = "API Settings",
                 subtitle = "Configure custom LLM API",
+                iconBackground = AccentBlueLight,
+                iconTint = AccentBlue,
                 onClick = onNavigateToSettings
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsItem(
+                icon = Icons.Default.Delete,
+                title = "Clear History",
+                subtitle = "Delete all scan history",
+                iconBackground = DiseaseRed.copy(alpha = 0.1f),
+                iconTint = DiseaseRed,
+                onClick = { showClearDialog = true }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -110,38 +204,46 @@ fun ProfileScreen(
                 icon = Icons.Default.Info,
                 title = "App Version",
                 subtitle = "1.0.0",
+                iconBackground = Color.LightGray.copy(alpha = 0.2f),
+                iconTint = TextSecondary,
                 onClick = { }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Disclaimer
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFFFF3E0)
+                    containerColor = WarningOrange.copy(alpha = 0.1f)
                 )
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "\uD83D\uDCA1",
-                        fontSize = 24.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "\uD83D\uDCA1",
+                            fontSize = 24.sp
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Disclaimer",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = WarningOrangeDark
+                        )
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Disclaimer",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
                         text = "This app provides preliminary disease detection. For accurate diagnosis, please consult with a professional agricultural expert.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        lineHeight = 20.sp
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 
@@ -157,7 +259,7 @@ fun ProfileScreen(
                         showClearDialog = false
                     }
                 ) {
-                    Text("Clear", color = Color(0xFFF44336))
+                    Text("Clear", color = DiseaseRed)
                 }
             },
             dismissButton = {
@@ -170,80 +272,93 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfileHeader() {
+private fun StatsCard(scanCount: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF4CAF50)),
-                contentAlignment = Alignment.Center
+            Text(
+                text = "Your Plant Health Journey",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextSecondary
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Text(
-                    text = "\uD83C\uDF3F",
-                    fontSize = 40.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column {
-                Text(
-                    text = "Plant User",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Plant Disease Detection",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(HealthyGreen.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "$scanCount",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = HealthyGreen
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Total Scans",
+                        fontSize = 12.sp,
+                        color = TextSecondary
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun StatsCard(scanCount: Int) {
+private fun QuickActionCard(
+    icon: String,
+    title: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF4CAF50).copy(alpha = 0.1f)
+            containerColor = color.copy(alpha = 0.1f)
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "$scanCount",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4CAF50)
-                )
-                Text(
-                    text = "Total Scans",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
+            Text(text = icon, fontSize = 24.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = value,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Text(
+                text = title,
+                fontSize = 11.sp,
+                color = TextSecondary
+            )
         }
     }
 }
@@ -253,13 +368,15 @@ private fun SettingsItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
+    iconBackground: Color,
+    iconTint: Color,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -272,11 +389,20 @@ private fun SettingsItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(iconBackground),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -287,7 +413,7 @@ private fun SettingsItem(
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = TextSecondary
                 )
             }
         }

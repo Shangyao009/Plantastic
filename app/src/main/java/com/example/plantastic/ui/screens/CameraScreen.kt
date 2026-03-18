@@ -283,7 +283,7 @@ private fun CameraContent(
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF4CAF50)),
+                            .background(Color(0xFF4CAF50)), // Green shutter button
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = "\uD83D\uDCF7", fontSize = 32.sp)

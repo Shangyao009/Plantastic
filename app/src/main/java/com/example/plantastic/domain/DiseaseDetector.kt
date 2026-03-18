@@ -95,12 +95,12 @@ If the plant appears healthy, return:
             )
 
             val request = ChatCompletionRequest(
-                model = ApiServiceProvider.model,
+                model = ApiServiceProvider.detectionModel,
                 messages = messages,
                 responseFormat = ResponseFormat("json_object")
             )
 
-            val response = ApiServiceProvider.diseaseApi.analyzePlantImage(request)
+            val response = ApiServiceProvider.detectionApi.analyzePlantImage(request)
 
             if (!response.isSuccessful) {
                 throw Exception("API call failed: ${response.code()} - ${response.message()}")
@@ -236,12 +236,12 @@ Answer the user's question based on this information. Be helpful, concise, and f
             )
 
             val request = ChatCompletionRequest(
-                model = ApiServiceProvider.model,
+                model = ApiServiceProvider.chatModel,
                 messages = messages,
                 maxTokens = 500
             )
 
-            val response = ApiServiceProvider.diseaseApi.analyzePlantImage(request)
+            val response = ApiServiceProvider.chatApi.analyzePlantImage(request)
 
             if (!response.isSuccessful) {
                 throw Exception("API call failed: ${response.code()}")

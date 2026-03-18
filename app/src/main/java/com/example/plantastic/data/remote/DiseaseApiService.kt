@@ -23,11 +23,11 @@ interface DiseaseDetectionApi {
 }
 
 /**
- * Singleton object to provide configured API service.
+ * Singleton object to provide configured API services.
  *
- * Configuration priority:
- * 1. Runtime settings (SettingsRepository) if useCustomApi is enabled
- * 2. BuildConfig defaults
+ * Supports separate APIs for:
+ * - Detection API: Used for plant/disease detection (vision model recommended)
+ * - Chat API: Used for conversational chat (can use different/cheaper model)
  */
 object ApiServiceProvider {
 
@@ -35,28 +35,28 @@ object ApiServiceProvider {
         .add(KotlinJsonAdapterFactory())
         .build()
 
-    private val authInterceptor = Interceptor { chain ->
-        val config = getApiConfig()
-        val originalRequest = chain.request()
-        val newRequest = originalRequest.newBuilder()
-            .header("Authorization", "Bearer ${config.apiKey}")
-            .header("Content-Type", "application/json")
-            .build()
-        chain.proceed(newRequest)
-    }
+    // Separate Retrofit and API instances for detection and chat
+    private var detectionRetrofit: Retrofit? = null
+    private var chatRetrofit: Retrofit? = null
+    private var detectionApiInstance: DiseaseDetectionApi? = null
+    private var chatApiInstance: DiseaseDetectionApi? = null
 
-    private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
-        .addInterceptor(authInterceptor)
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
-        .build()
-
-    private var retrofit: Retrofit? = null
-    private var diseaseApiInstance: DiseaseDetectionApi? = null
-
-    private fun getApiConfig(): ApiConfig {
+    /**
+     * Get API config for detection (prioritizes detection-specific settings)
+     */
+    private fun getDetectionApiConfig(): ApiConfig {
         return try {
+            if (SettingsRepository.useSeparateApis) {
+                // Use detection-specific settings
+                if (SettingsRepository.isDetectionApiConfigured()) {
+                    return ApiConfig(
+                        apiKey = SettingsRepository.detectionApiKey,
+                        baseUrl = SettingsRepository.detectionApiBaseUrl,
+                        model = SettingsRepository.detectionApiModel
+                    )
+                }
+            }
+            // Fall back to unified settings
             if (SettingsRepository.isCustomApiConfigured()) {
                 ApiConfig(
                     apiKey = SettingsRepository.apiKey,
@@ -64,7 +64,6 @@ object ApiServiceProvider {
                     model = SettingsRepository.apiModel
                 )
             } else {
-                // Fall back to BuildConfig
                 ApiConfig(
                     apiKey = BuildConfig.API_KEY,
                     baseUrl = BuildConfig.API_BASE_URL,
@@ -72,7 +71,6 @@ object ApiServiceProvider {
                 )
             }
         } catch (e: Exception) {
-            // Fall back to BuildConfig if SettingsRepository is not initialized
             ApiConfig(
                 apiKey = BuildConfig.API_KEY,
                 baseUrl = BuildConfig.API_BASE_URL,
@@ -81,33 +79,127 @@ object ApiServiceProvider {
         }
     }
 
-    private fun getRetrofit(): Retrofit {
-        val config = getApiConfig()
-        return retrofit ?: Retrofit.Builder()
-            .baseUrl(config.baseUrl)
-            .client(okHttpClient)
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .build()
-            .also { retrofit = it }
+    /**
+     * Get API config for chat (prioritizes chat-specific settings)
+     */
+    private fun getChatApiConfig(): ApiConfig {
+        return try {
+            if (SettingsRepository.useSeparateApis) {
+                // Use chat-specific settings
+                if (SettingsRepository.isChatApiConfigured()) {
+                    return ApiConfig(
+                        apiKey = SettingsRepository.chatApiKey,
+                        baseUrl = SettingsRepository.chatApiBaseUrl,
+                        model = SettingsRepository.chatApiModel
+                    )
+                }
+            }
+            // Fall back to unified settings
+            if (SettingsRepository.isCustomApiConfigured()) {
+                ApiConfig(
+                    apiKey = SettingsRepository.apiKey,
+                    baseUrl = SettingsRepository.apiBaseUrl,
+                    model = SettingsRepository.apiModel
+                )
+            } else {
+                ApiConfig(
+                    apiKey = BuildConfig.API_KEY,
+                    baseUrl = BuildConfig.API_BASE_URL,
+                    model = BuildConfig.API_MODEL
+                )
+            }
+        } catch (e: Exception) {
+            ApiConfig(
+                apiKey = BuildConfig.API_KEY,
+                baseUrl = BuildConfig.API_BASE_URL,
+                model = BuildConfig.API_MODEL
+            )
+        }
     }
 
-    val diseaseApi: DiseaseDetectionApi
-        get() = diseaseApiInstance ?: getRetrofit().create(DiseaseDetectionApi::class.java).also { diseaseApiInstance = it }
+    private fun createOkHttpClient(apiKey: String): OkHttpClient {
+        val authInterceptor = Interceptor { chain ->
+            val originalRequest = chain.request()
+            val newRequest = originalRequest.newBuilder()
+                .header("Authorization", "Bearer $apiKey")
+                .header("Content-Type", "application/json")
+                .build()
+            chain.proceed(newRequest)
+        }
 
-    // For backward compatibility
-    @Deprecated("Use diseaseApi instead", ReplaceWith("diseaseApi"))
-    val api: DiseaseDetectionApi
-        get() = diseaseApi
+        return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
+    }
 
-    val model: String
-        get() = getApiConfig().model
+    private fun getDetectionRetrofit(): Retrofit {
+        val config = getDetectionApiConfig()
+        return detectionRetrofit ?: Retrofit.Builder()
+            .baseUrl(config.baseUrl)
+            .client(createOkHttpClient(config.apiKey))
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+            .also { detectionRetrofit = it }
+    }
+
+    private fun getChatRetrofit(): Retrofit {
+        val config = getChatApiConfig()
+        return chatRetrofit ?: Retrofit.Builder()
+            .baseUrl(config.baseUrl)
+            .client(createOkHttpClient(config.apiKey))
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+            .also { chatRetrofit = it }
+    }
 
     /**
-     * Force recreate the API instance (useful when settings change)
+     * API for plant/disease detection (uses vision model)
+     */
+    val detectionApi: DiseaseDetectionApi
+        get() = detectionApiInstance ?: getDetectionRetrofit().create(DiseaseDetectionApi::class.java).also { detectionApiInstance = it }
+
+    /**
+     * API for chat functionality (can use different model)
+     */
+    val chatApi: DiseaseDetectionApi
+        get() = chatApiInstance ?: getChatRetrofit().create(DiseaseDetectionApi::class.java).also { chatApiInstance = it }
+
+    // Legacy support - uses detectionApi
+    @Deprecated("Use detectionApi instead", ReplaceWith("detectionApi"))
+    val diseaseApi: DiseaseDetectionApi
+        get() = detectionApi
+
+    @Deprecated("Use detectionApi instead", ReplaceWith("detectionApi"))
+    val api: DiseaseDetectionApi
+        get() = detectionApi
+
+    /**
+     * Get the model name for detection
+     */
+    val detectionModel: String
+        get() = getDetectionApiConfig().model
+
+    /**
+     * Get the model name for chat
+     */
+    val chatModel: String
+        get() = getChatApiConfig().model
+
+    @Deprecated("Use detectionModel instead", ReplaceWith("detectionModel"))
+    val model: String
+        get() = detectionModel
+
+    /**
+     * Force recreate all API instances (useful when settings change)
      */
     fun recreate() {
-        retrofit = null
-        diseaseApiInstance = null
+        detectionRetrofit = null
+        chatRetrofit = null
+        detectionApiInstance = null
+        chatApiInstance = null
     }
 
     data class ApiConfig(

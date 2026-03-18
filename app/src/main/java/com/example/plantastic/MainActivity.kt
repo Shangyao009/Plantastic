@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.example.plantastic.data.SettingsRepository
+import com.example.plantastic.data.UserPreferencesRepository
 import com.example.plantastic.ui.navigation.NavigationGraph
 import com.example.plantastic.ui.theme.PlantasticTheme
 
@@ -14,6 +15,7 @@ class MainActivity : ComponentActivity() {
 
         // Initialize settings repository
         SettingsRepository.init(this)
+        UserPreferencesRepository.init(this)
 
         enableEdgeToEdge()
         setContent {

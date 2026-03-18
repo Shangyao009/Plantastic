@@ -1,6 +1,12 @@
 package com.example.plantastic.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,15 +22,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,10 +50,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.plantastic.data.ScanHistoryRepository
+import com.example.plantastic.data.UserPreferencesRepository
 import com.example.plantastic.ui.theme.AccentBlue
 import com.example.plantastic.ui.theme.AccentBlueLight
 import com.example.plantastic.ui.theme.DiseaseRed
@@ -57,11 +74,35 @@ fun ProfileScreen(
     onNavigateToSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var showClearDialog by remember { mutableStateOf(false) }
     val scanResults = ScanHistoryRepository.getScanResults()
     val scanCount = scanResults.size
     val healthyCount = scanResults.count { it.disease.name == "Healthy" }
     val diseaseCount = scanResults.count { it.disease.name != "Healthy" }
+
+    var username by remember { mutableStateOf(UserPreferencesRepository.getUsername()) }
+    var avatarUri by remember { mutableStateOf(UserPreferencesRepository.getAvatarUri()) }
+    var isEditing by remember { mutableStateOf(false) }
+
+    val pickMedia = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    it,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+                avatarUri = it.toString()
+                UserPreferencesRepository.setAvatarUri(avatarUri)
+            } catch (e: SecurityException) {
+                // Fallback: store URI directly (may not persist across restarts)
+                avatarUri = it.toString()
+                UserPreferencesRepository.setAvatarUri(avatarUri)
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -83,33 +124,99 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "\uD83C\uDF3F",
-                        fontSize = 40.sp
-                    )
+                // Avatar with edit overlay
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.2f))
+                            .border(2.dp, Color.White.copy(alpha = 0.5f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (avatarUri != null) {
+                            AsyncImage(
+                                model = avatarUri,
+                                contentDescription = "Profile avatar",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = "\uD83C\uDF3F",
+                                fontSize = 40.sp
+                            )
+                        }
+                    }
+                    // Camera icon overlay
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                            .clickable {
+                                pickMedia.launch(
+                                    PickVisualMediaRequest(
+                                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                                    )
+                                )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "\uD83D\uDCF7", fontSize = 14.sp)
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                Column {
-                    Text(
-                        text = "Plant User",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                Column(modifier = Modifier.weight(1f)) {
+                    if (isEditing) {
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            label = { Text("Username") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    UserPreferencesRepository.setUsername(username)
+                                    isEditing = false
+                                }
+                            ),
+                            textStyle = TextStyle(
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    } else {
+                        Text(
+                            text = username,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                     Text(
                         text = "Plant Disease Detection",
                         fontSize = 14.sp,
                         color = Color.White.copy(alpha = 0.85f)
+                    )
+                }
+
+                IconButton(
+                    onClick = {
+                        if (isEditing) {
+                            UserPreferencesRepository.setUsername(username)
+                        }
+                        isEditing = !isEditing
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (isEditing) Icons.Default.Delete else Icons.Default.Edit,
+                        contentDescription = if (isEditing) "Cancel edit" else "Edit profile",
+                        tint = Color.White
                     )
                 }
             }
@@ -273,6 +380,7 @@ fun ProfileScreen(
         )
     }
 }
+
 
 @Composable
 private fun StatsCard(scanCount: Int) {

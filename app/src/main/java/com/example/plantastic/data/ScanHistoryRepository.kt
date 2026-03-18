@@ -24,6 +24,10 @@ object ScanHistoryRepository {
     fun clearHistory() {
         scanResults.clear()
     }
+
+    fun deleteScanResult(id: String): Boolean {
+        return scanResults.removeIf { it.id == id }
+    }
 }
 
 object PlantDatabase {

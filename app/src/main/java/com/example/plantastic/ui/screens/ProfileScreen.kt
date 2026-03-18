@@ -45,6 +45,7 @@ import com.example.plantastic.ui.components.PlantasticTopBar
 
 @Composable
 fun ProfileScreen(
+    onNavigateToSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showClearDialog by remember { mutableStateOf(false) }
@@ -88,6 +89,13 @@ fun ProfileScreen(
                 onClick = { showClearDialog = true }
             )
 
+            SettingsItem(
+                icon = Icons.Default.Settings,
+                title = "API Settings",
+                subtitle = "Configure custom LLM API",
+                onClick = onNavigateToSettings
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
 
             // About Section
@@ -102,13 +110,6 @@ fun ProfileScreen(
                 icon = Icons.Default.Info,
                 title = "App Version",
                 subtitle = "1.0.0",
-                onClick = { }
-            )
-
-            SettingsItem(
-                icon = Icons.Default.Settings,
-                title = "Plantastic",
-                subtitle = "AI-Powered Plant Disease Detection",
                 onClick = { }
             )
 

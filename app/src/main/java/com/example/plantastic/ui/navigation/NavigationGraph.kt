@@ -21,6 +21,7 @@ import com.example.plantastic.ui.screens.HomeScreen
 import com.example.plantastic.ui.screens.ProfileScreen
 import com.example.plantastic.ui.screens.ResultScreen
 import com.example.plantastic.ui.screens.ScanResultDetailScreen
+import com.example.plantastic.ui.screens.SettingsScreen
 
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
@@ -33,6 +34,7 @@ sealed class Screen(val route: String) {
     }
     data object History : Screen("history")
     data object Profile : Screen("profile")
+    data object Settings : Screen("settings")
 }
 
 @Composable
@@ -140,7 +142,19 @@ fun NavigationGraph(
             }
 
             composable(Screen.Profile.route) {
-                ProfileScreen()
+                ProfileScreen(
+                    onNavigateToSettings = {
+                        navController.navigate(Screen.Settings.route)
+                    }
+                )
+            }
+
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
             }
         }
     }

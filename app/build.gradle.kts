@@ -3,6 +3,11 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// Read API configuration from gradle.properties
+def apiKey = properties.getProperty("PLANTASIC_API_KEY", "YOUR_API_KEY_HERE")
+def apiBaseUrl = properties.getProperty("PLANTASIC_API_BASE_URL", "https://api.openai.com/")
+def apiModel = properties.getProperty("PLANTASIC_API_MODEL", "gpt-4o")
+
 android {
     namespace = "com.example.plantastic"
     compileSdk {
@@ -19,6 +24,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // API Configuration - override in gradle.properties or local.properties
+        buildConfigField("String", "API_KEY", "\"$apiKey\"")
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        buildConfigField("String", "API_MODEL", "\"$apiModel\"")
     }
 
     buildTypes {
@@ -36,6 +46,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -55,6 +66,12 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.navigation.compose)
     implementation(libs.accompanist.permissions)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.moshi)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+    implementation(libs.moshi)
+    implementation(libs.moshi.kotlin)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -1,5 +1,6 @@
 package com.example.plantastic.ui.screens
 
+import android.content.Context
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -59,12 +61,13 @@ fun ResultScreen(
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var scanResult by remember { mutableStateOf<ScanResult?>(null) }
+    val context = LocalContext.current
 
     LaunchedEffect(imageUri) {
         // Simulate disease detection processing time
         delay(1500)
 
-        val detectedDisease = DiseaseDetector.detectDisease(imageUri)
+        val detectedDisease = DiseaseDetector.detectDisease(context, imageUri)
 
         scanResult = ScanResult(
             id = UUID.randomUUID().toString(),

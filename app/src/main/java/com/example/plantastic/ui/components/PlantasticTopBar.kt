@@ -25,7 +25,8 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun PlantasticTopBar(
     title: String = "Plantastic",
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    navigationIcon: @Composable (() -> Unit)? = null
 ) {
     Box(
         modifier = modifier
@@ -36,8 +37,14 @@ fun PlantasticTopBar(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.align(Alignment.CenterStart)
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.CenterStart)
         ) {
+            navigationIcon?.invoke()
+            if (navigationIcon != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             LeafIcon()
             Spacer(modifier = Modifier.width(12.dp))
             Text(

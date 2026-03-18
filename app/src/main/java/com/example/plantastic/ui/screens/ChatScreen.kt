@@ -317,9 +317,9 @@ fun ChatScreen(
                         onSend = {
                             if (inputText.isNotBlank() && !isLoading && disease != null && imageUri != null) {
                                 val question = inputText
-                                inputText = ""
                                 scope.launch {
                                     isLoading = true
+                                    inputText = ""
                                     addMessage(question, isUser = true)
                                     val answer = DiseaseDetector.chatAboutPlant(
                                         context, imageUri, disease, question

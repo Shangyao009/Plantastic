@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -77,6 +79,7 @@ fun ResultScreen(
     imageUri: Uri,
     onNavigateBack: () -> Unit,
     onGoHome: () -> Unit,
+    onNavigateToChat: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var isLoading by remember { mutableStateOf(true) }
@@ -134,7 +137,8 @@ fun ResultScreen(
                 plantType = plantAnalysisResult?.plantType,
                 plantDescription = plantAnalysisResult?.plantDescription,
                 onNavigateBack = onNavigateBack,
-                onGoHome = onGoHome
+                onGoHome = onGoHome,
+                onNavigateToChat = onNavigateToChat
             )
         }
     }
@@ -243,7 +247,8 @@ private fun ResultContent(
     plantType: String?,
     plantDescription: String?,
     onNavigateBack: () -> Unit,
-    onGoHome: () -> Unit
+    onGoHome: () -> Unit,
+    onNavigateToChat: ((String) -> Unit)?
 ) {
     val affectedAreas = if (scanResult.disease.name != "Healthy") {
         generateMockAffectedAreas()
@@ -333,13 +338,13 @@ private fun ResultContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Chat Section
-            ChatSection(
-                imageUri = scanResult.imageUri,
-                disease = scanResult.disease
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
+            // Chat Button
+            if (onNavigateToChat != null) {
+                ChatWithAiButton(
+                    onClick = { onNavigateToChat(scanResult.id) }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             // Action Buttons
             Button(
@@ -374,6 +379,7 @@ fun ScanResultDetailScreen(
     scanId: String,
     onNavigateBack: () -> Unit,
     onGoHome: () -> Unit,
+    onNavigateToChat: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val scanResult = remember(scanId) {
@@ -465,13 +471,13 @@ fun ScanResultDetailScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Chat Section
-                ChatSection(
-                    imageUri = scanResult.imageUri,
-                    disease = scanResult.disease
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
+                // Chat Button
+                if (onNavigateToChat != null) {
+                    ChatWithAiButton(
+                        onClick = { onNavigateToChat.invoke() }
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
                 // Action Buttons
                 Button(
@@ -518,6 +524,54 @@ private fun getPlantTypeEmoji(plantType: String): String {
         "succulent" -> "\uD83C\uDF3F"
         "other_plant" -> "\uD83C\uDF3F"
         else -> "\uD83C\uDF3F"
+    }
+}
+
+@Composable
+private fun ChatWithAiButton(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(GradientStart, GradientEnd)
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = "\uD83D\uDCAC", fontSize = 22.sp)
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Chat with AI",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Ask questions about this plant",
+                    fontSize = 13.sp,
+                    color = TextSecondary
+                )
+            }
+            Text(text = "\u276F", fontSize = 20.sp, color = TextSecondary)
+        }
     }
 }
 

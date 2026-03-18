@@ -116,6 +116,9 @@ fun NavigationGraph(
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Home.route) { inclusive = true }
                         }
+                    },
+                    onNavigateToChat = { scanId ->
+                        navController.navigate(Screen.Chat.createRoute(scanId))
                     }
                 )
             }
@@ -136,6 +139,9 @@ fun NavigationGraph(
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Home.route) { inclusive = true }
                         }
+                    },
+                    onNavigateToChat = {
+                        navController.navigate(Screen.Chat.createRoute(scanId))
                     }
                 )
             }

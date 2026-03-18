@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -123,7 +122,7 @@ private fun CameraContent(
                     val cameraProvider = cameraProviderFuture.get()
 
                     val preview = Preview.Builder().build().also {
-                        it.surfaceProvider = previewView.surfaceProvider
+                        it.setSurfaceProvider(previewView.surfaceProvider)
                     }
 
                     imageCapture = ImageCapture.Builder()
@@ -209,11 +208,9 @@ private fun CameraContent(
                         .background(Color(0xFF4CAF50)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CameraAlt,
-                        contentDescription = "Capture",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
+                    Text(
+                        text = "\uD83D\uDCF7",
+                        fontSize = 32.sp
                     )
                 }
             }

@@ -10,7 +10,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSize
 import coil.compose.AsyncImage
 import kotlin.random.Random
 
@@ -36,11 +35,7 @@ fun AffectedAreaOverlay(
 
         if (affectedAreas.isNotEmpty()) {
             Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .onSize { size ->
-                        // This ensures the canvas is properly sized
-                    }
+                modifier = Modifier.fillMaxSize()
             ) {
                 val canvasWidth = size.width
                 val canvasHeight = size.height

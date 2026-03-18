@@ -8,7 +8,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -50,7 +49,7 @@ fun CameraButton(
             )
             .clickable(
                 interactionSource = interactionSource,
-                indication = rememberRipple(bounded = true, color = Color.White),
+                indication = null,
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center

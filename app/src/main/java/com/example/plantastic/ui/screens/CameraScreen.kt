@@ -24,7 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -161,13 +161,13 @@ private fun CameraContent(
                 .background(Color.Black.copy(alpha = 0.5f))
         ) {
             Icon(
-                imageVector = Icons.Default.ArrowBack,
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
                 tint = Color.White
             )
         }
 
-        // Camera frame guide - center square with corner brackets
+        // Camera frame - dark overlay with clear center square
         val screenWidth = LocalContext.current.resources.displayMetrics.widthPixels
         val squareSize = (screenWidth * 0.75f).dp
 
@@ -191,33 +191,12 @@ private fun CameraContent(
                     size = Size(canvasWidth, canvasHeight)
                 )
 
-                // Clear the center square area (make it transparent)
+                // Clear the center square area (make it transparent to show camera)
                 drawRect(
                     color = Color.Transparent,
                     topLeft = Offset(centerX - halfSquare, centerY - halfSquare),
                     size = Size(squareSizePx, squareSizePx)
                 )
-
-                // Draw corner brackets
-                val bracketLength = 40f
-                val bracketWidth = 6f
-                val cornerColor = Color.White
-
-                // Top-left corner
-                drawLine(cornerColor, Offset(centerX - halfSquare, centerY - halfSquare + bracketLength), Offset(centerX - halfSquare, centerY - halfSquare), strokeWidth = bracketWidth)
-                drawLine(cornerColor, Offset(centerX - halfSquare, centerY - halfSquare), Offset(centerX - halfSquare + bracketLength, centerY - halfSquare), strokeWidth = bracketWidth)
-
-                // Top-right corner
-                drawLine(cornerColor, Offset(centerX + halfSquare - bracketLength, centerY - halfSquare), Offset(centerX + halfSquare, centerY - halfSquare), strokeWidth = bracketWidth)
-                drawLine(cornerColor, Offset(centerX + halfSquare, centerY - halfSquare), Offset(centerX + halfSquare, centerY - halfSquare + bracketLength), strokeWidth = bracketWidth)
-
-                // Bottom-left corner
-                drawLine(cornerColor, Offset(centerX - halfSquare, centerY + halfSquare - bracketLength), Offset(centerX - halfSquare, centerY + halfSquare), strokeWidth = bracketWidth)
-                drawLine(cornerColor, Offset(centerX - halfSquare, centerY + halfSquare), Offset(centerX - halfSquare + bracketLength, centerY + halfSquare), strokeWidth = bracketWidth)
-
-                // Bottom-right corner
-                drawLine(cornerColor, Offset(centerX + halfSquare - bracketLength, centerY + halfSquare), Offset(centerX + halfSquare, centerY + halfSquare), strokeWidth = bracketWidth)
-                drawLine(cornerColor, Offset(centerX + halfSquare, centerY + halfSquare - bracketLength), Offset(centerX + halfSquare, centerY + halfSquare), strokeWidth = bracketWidth)
             }
         }
 
@@ -242,37 +221,42 @@ private fun CameraContent(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(Color.White)
+                    .background(Color.Transparent)
             ) {
+                // White border ring
                 Box(
                     modifier = Modifier
-                        .size(64.dp)
+                        .size(80.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF4CAF50)),
+                        .background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "\uD83D\uDCF7",
-                        fontSize = 32.sp
-                    )
+                    // Inner green circle
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF4CAF50)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "\uD83D\uDCF7",
+                            fontSize = 32.sp
+                        )
+                    }
                 }
             }
         }
 
-        // Instruction text
+        // Instruction text at bottom
         Text(
-            text = "Position the leaf in the frame",
+            text = "Scan your plant",
             color = Color.White,
-            fontSize = 14.sp,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 80.dp)
-                .background(
-                    Color.Black.copy(alpha = 0.5f),
-                    RoundedCornerShape(16.dp)
-                )
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 140.dp))
     }
 }
 

@@ -187,4 +187,71 @@ If the plant appears healthy, return:
         val primaryDisease = detectDisease(context, imageUri)
         return listOf(primaryDisease)
     }
+
+    /**
+     * Chat with the model about the plant/disease.
+     * Uses the disease info and image as context.
+     */
+    suspend fun chatAboutPlant(
+        context: Context,
+        imageUri: Uri,
+        disease: Disease,
+        userMessage: String
+    ): String {
+        return try {
+            chatWithApi(context, imageUri, disease, userMessage)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Sorry, I couldn't process your question. Please try again."
+        }
+    }
+
+    private suspend fun chatWithApi(
+        context: Context,
+        imageUri: Uri,
+        disease: Disease,
+        userMessage: String
+    ): String {
+        return withContext(Dispatchers.IO) {
+            val base64Image = encodeImageToBase64(context, imageUri)
+
+            val systemPrompt = """
+You are a plant disease expert assistant. The user scanned a plant and the analysis showed:
+- Disease: ${disease.name}
+- Description: ${disease.description}
+- Confidence: ${(disease.confidence * 100).toInt()}%
+${if (disease.treatments.isNotEmpty()) "Treatments: ${disease.treatments.joinToString { it.name }}" else ""}
+
+Answer the user's question based on this information. Be helpful, concise, and friendly.
+            """.trimIndent()
+
+            val content = listOf(
+                ContentItem.TextContent(text = systemPrompt),
+                ContentItem.ImageContent(imageUrl = ImageUrl(url = "data:image/jpeg;base64,$base64Image")),
+                ContentItem.TextContent(text = userMessage)
+            )
+
+            val messages = listOf(
+                ChatMessage(role = "user", content = content)
+            )
+
+            val request = ChatCompletionRequest(
+                model = ApiServiceProvider.model,
+                messages = messages,
+                maxTokens = 500
+            )
+
+            val response = ApiServiceProvider.diseaseApi.analyzePlantImage(request)
+
+            if (!response.isSuccessful) {
+                throw Exception("API call failed: ${response.code()}")
+            }
+
+            val responseBody = response.body()
+                ?: throw Exception("Empty response")
+
+            responseBody.choices.firstOrNull()?.message?.content
+                ?: throw Exception("No content in response")
+        }
+    }
 }

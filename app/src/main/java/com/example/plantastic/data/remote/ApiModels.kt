@@ -102,3 +102,14 @@ data class TreatmentResult(
     @Json(name = "application_method") val applicationMethod: String,
     @Json(name = "frequency") val frequency: String
 )
+
+/**
+ * LLM-based plant detection result (includes plant type and disease)
+ */
+@JsonClass(generateAdapter = true)
+data class PlantDetectionResult(
+    @Json(name = "is_plant") val isPlant: Boolean,
+    @Json(name = "plant_type") val plantType: String?, // "leaf", "flower", "fruit", "root", "mushroom", etc.
+    @Json(name = "plant_description") val plantDescription: String?,
+    @Json(name = "disease") val disease: DiseaseResult?
+)

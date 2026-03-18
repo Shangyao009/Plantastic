@@ -58,6 +58,7 @@ import com.example.plantastic.data.ScanHistoryRepository
 import com.example.plantastic.data.model.Disease
 import com.example.plantastic.data.model.ScanResult
 import com.example.plantastic.domain.DiseaseDetector
+import com.example.plantastic.domain.PlantAnalysisResult
 import com.example.plantastic.ui.components.AffectedAreaOverlay
 import com.example.plantastic.ui.components.DiseaseCard
 import com.example.plantastic.ui.components.TreatmentList
@@ -75,25 +76,40 @@ fun ResultScreen(
 ) {
     var isLoading by remember { mutableStateOf(true) }
     var scanResult by remember { mutableStateOf<ScanResult?>(null) }
+    var plantAnalysisResult by remember { mutableStateOf<PlantAnalysisResult?>(null) }
+    var isNotPlant by remember { mutableStateOf(false) }
+    var isCheckingPlant by remember { mutableStateOf(true) }
     val context = LocalContext.current
 
     LaunchedEffect(imageUri) {
-        // Simulate disease detection processing time
-        delay(1500)
+        // First, detect if it's a plant and identify disease using LLM
+        val result = DiseaseDetector.detectPlantAndDisease(context, imageUri)
+        plantAnalysisResult = result
 
-        val detectedDisease = DiseaseDetector.detectDisease(context, imageUri)
+        if (!result.isPlant) {
+            // Not a plant image
+            isNotPlant = true
+            isCheckingPlant = false
+            isLoading = false
+        } else {
+            // It's a plant, proceed with the result
+            isCheckingPlant = false
+            delay(500) // Brief delay for UX
 
-        scanResult = ScanResult(
-            id = UUID.randomUUID().toString(),
-            imageUri = imageUri,
-            timestamp = System.currentTimeMillis(),
-            disease = detectedDisease
-        )
+            val detectedDisease = result.disease ?: DiseaseDetector.detectDiseaseMock(imageUri)
 
-        // Save to history
-        scanResult?.let { ScanHistoryRepository.addScanResult(it) }
+            scanResult = ScanResult(
+                id = UUID.randomUUID().toString(),
+                imageUri = imageUri,
+                timestamp = System.currentTimeMillis(),
+                disease = detectedDisease
+            )
 
-        isLoading = false
+            // Save to history
+            scanResult?.let { ScanHistoryRepository.addScanResult(it) }
+
+            isLoading = false
+        }
     }
 
     Box(
@@ -102,12 +118,72 @@ fun ResultScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         when {
-            isLoading -> LoadingContent()
+            isCheckingPlant || isLoading -> LoadingContent()
+            isNotPlant -> NotPlantContent(
+                plantDescription = plantAnalysisResult?.plantDescription,
+                onGoBack = onNavigateBack,
+                onScanAgain = onGoHome
+            )
             scanResult != null -> ResultContent(
                 scanResult = scanResult!!,
+                plantType = plantAnalysisResult?.plantType,
+                plantDescription = plantAnalysisResult?.plantDescription,
                 onNavigateBack = onNavigateBack,
                 onGoHome = onGoHome
             )
+        }
+    }
+}
+
+@Composable
+private fun NotPlantContent(
+    plantDescription: String?,
+    onGoBack: () -> Unit,
+    onScanAgain: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "\uD83D\uDE35",
+            fontSize = 64.sp
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "Not a Plant",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFFF44336)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = if (plantDescription != null)
+                "The image appears to show: $plantDescription\n\nPlease capture an image of a plant, leaf, flower, fruit, vegetable, mushroom, or other plant-related subject."
+            else
+                "The image doesn't appear to be a plant-related subject.\n\nPlease capture an image of a plant, leaf, flower, fruit, vegetable, mushroom, or other plant-related subject.",
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+        Button(
+            onClick = onGoBack,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Try Again")
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onScanAgain,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Scan Another")
         }
     }
 }
@@ -155,6 +231,8 @@ private fun LoadingContent() {
 @Composable
 private fun ResultContent(
     scanResult: ScanResult,
+    plantType: String?,
+    plantDescription: String?,
     onNavigateBack: () -> Unit,
     onGoHome: () -> Unit
 ) {
@@ -202,6 +280,40 @@ private fun ResultContent(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // Plant Type Badge
+            if (plantType != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                Color(0xFF4CAF50).copy(alpha = 0.1f),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = getPlantTypeEmoji(plantType) + " " + plantType.replaceFirstChar { it.uppercase() },
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF2E7D32)
+                        )
+                    }
+                    if (plantDescription != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = plantDescription,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+            }
+
             // Disease Card
             DiseaseCard(disease = scanResult.disease)
 
@@ -378,6 +490,25 @@ fun ScanResultDetailScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+    }
+}
+
+private fun getPlantTypeEmoji(plantType: String): String {
+    return when (plantType.lowercase()) {
+        "leaf" -> "\uD83C\uDF3F"
+        "flower" -> "\uD83C\uDF38"
+        "fruit" -> "\uD83C\uDF53"
+        "vegetable" -> "\uD83E\uDD66"
+        "root" -> "\uD83E\uDDC0"
+        "stem" -> "\uD83C\uDF31"
+        "bark" -> "\uD83C\uDF32"
+        "seed" -> "\uD83C\uDF31"
+        "mushroom" -> "\uD83C\uDF44"
+        "fungi" -> "\uD83C\uDF44"
+        "grass" -> "\uD83C\uDF3F"
+        "succulent" -> "\uD83C\uDF3F"
+        "other_plant" -> "\uD83C\uDF3F"
+        else -> "\uD83C\uDF3F"
     }
 }
 

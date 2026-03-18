@@ -115,7 +115,6 @@ private fun CameraContent(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
-    var showNotPlantError by remember { mutableStateOf(false) }
 
     // Square size as a fraction of screen width
     val displayMetrics = context.resources.displayMetrics
@@ -249,21 +248,6 @@ private fun CameraContent(
                 .padding(bottom = 140.dp)
         )
 
-        // ── Error message ──────────────────────────────────────────────────
-        if (showNotPlantError) {
-            Text(
-                text = "Please capture a plant or leaf",
-                color = Color.Red,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 110.dp)
-                    .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-        }
-
         // ── Shutter button ────────────────────────────────────────────────
         Box(
             modifier = Modifier
@@ -272,7 +256,6 @@ private fun CameraContent(
         ) {
             IconButton(
                 onClick = {
-                    showNotPlantError = false
                     imageCapture?.let { capture ->
                         takePhoto(
                             context         = context,
@@ -280,7 +263,6 @@ private fun CameraContent(
                             squareSizePx    = squareSizePx,
                             executor        = ContextCompat.getMainExecutor(context),
                             onImageCaptured = onImageCaptured,
-                            onNotPlant      = { showNotPlantError = true },
                             onError         = { /* Handle error */ }
                         )
                     }
@@ -382,7 +364,6 @@ private fun takePhoto(
     squareSizePx: Int,          // screen-space side length of the viewfinder square
     executor: Executor,
     onImageCaptured: (Uri) -> Unit,
-    onNotPlant: () -> Unit,
     onError: (ImageCaptureException) -> Unit
 ) {
     val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
@@ -396,12 +377,6 @@ private fun takePhoto(
         executor,
         object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                // Check if the image contains a plant/leaf
-                if (!isPlantImage(photoFile.absolutePath)) {
-                    onNotPlant()
-                    return
-                }
-
                 // Crop the saved bitmap to only the square region
                 val croppedUri = cropToSquare(
                     context      = context,
@@ -415,43 +390,6 @@ private fun takePhoto(
             override fun onError(exception: ImageCaptureException) = onError(exception)
         }
     )
-}
-
-/**
- * Analyzes the image to check if it contains plant-like colors.
- * Returns true if the image appears to contain a plant/leaf.
- */
-private fun isPlantImage(imagePath: String): Boolean {
-    val bitmap = BitmapFactory.decodeFile(imagePath) ?: return true
-
-    // Sample pixels for performance (check every 10th pixel)
-    var greenPixels = 0
-    var totalPixels = 0
-
-    for (y in 0 until bitmap.height step 10) {
-        for (x in 0 until bitmap.width step 10) {
-            val pixel = bitmap.getPixel(x, y)
-            val r = (pixel shr 16) and 0xFF
-            val g = (pixel shr 8) and 0xFF
-            val b = pixel and 0xFF
-
-            // Check if pixel is green-ish (plant/leaf color)
-            // Green component should be strong, and green > red
-            if (g > r && g > b && g > 80 && (g - r) > 20) {
-                greenPixels++
-            }
-            totalPixels++
-        }
-    }
-
-    bitmap.recycle()
-
-    // If more than 15% of sampled pixels are green-ish, consider it a plant
-    return if (totalPixels > 0) {
-        (greenPixels.toFloat() / totalPixels) > 0.15f
-    } else {
-        true // Default to true if we can't analyze
-    }
 }
 
 /**

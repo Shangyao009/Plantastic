@@ -14,11 +14,22 @@ import com.example.plantastic.data.remote.ChatMessage
 import com.example.plantastic.data.remote.ContentItem
 import com.example.plantastic.data.remote.DiseaseDetectionResult
 import com.example.plantastic.data.remote.ImageUrl
+import com.example.plantastic.data.remote.PlantDetectionResult
 import com.example.plantastic.data.remote.ResponseFormat
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
+
+/**
+ * Result of plant and disease detection
+ */
+data class PlantAnalysisResult(
+    val isPlant: Boolean,
+    val plantType: String?,
+    val plantDescription: String?,
+    val disease: Disease?
+)
 
 /**
  * Disease detector that uses OpenAI GPT-4 Vision API for plant disease detection.
@@ -41,6 +52,137 @@ object DiseaseDetector {
             e.printStackTrace()
             detectDiseaseMock(imageUri)
         }
+    }
+
+    /**
+     * Detects if the image is a plant and identifies any diseases.
+     * Uses LLM to analyze the image for plant type (leaf, flower, fruit, root, mushroom, etc.)
+     * and disease detection.
+     */
+    suspend fun detectPlantAndDisease(context: Context, imageUri: Uri): PlantAnalysisResult {
+        return try {
+            detectPlantAndDiseaseFromApi(context, imageUri)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Fallback to mock detection
+            PlantAnalysisResult(
+                isPlant = true,
+                plantType = "leaf",
+                plantDescription = "Mock plant",
+                disease = detectDiseaseMock(imageUri)
+            )
+        }
+    }
+
+    /**
+     * LLM-based plant and disease detection
+     */
+    private suspend fun detectPlantAndDiseaseFromApi(context: Context, imageUri: Uri): PlantAnalysisResult {
+        return withContext(Dispatchers.IO) {
+            val base64Image = encodeImageToBase64(context, imageUri)
+
+            val prompt = """
+Analyze this image and return a JSON object determining if it's a plant/plant-related and identifying any diseases:
+
+{
+  "is_plant": true/false,
+  "plant_type": "leaf" | "flower" | "fruit" | "vegetable" | "root" | "stem" | "bark" | "seed" | "mushroom" | "fungi" | "other_plant",
+  "plant_description": "Brief description of what you see (e.g., 'green oak leaf with spots', 'red rose flower', 'brown mushroom')",
+  "disease": {
+    "id": "disease_id",
+    "name": "Disease Name",
+    "description": "Description of the disease",
+    "confidence": 0.0-1.0,
+    "affected_area_percent": 0-100,
+    "treatments": [
+      {
+        "id": "treatment_id",
+        "name": "Treatment Name",
+        "description": "Treatment description",
+        "type": "CHEMICAL" or "ORGANIC",
+        "application_method": "How to apply",
+        "frequency": "How often"
+      }
+    ]
+  }
+}
+
+IMPORTANT:
+- If the image shows a plant, plant part, mushroom, or fungi, set is_plant to true
+- If the image shows something that is NOT plant-related (like laptop, car, cookie, person, building), set is_plant to false and set disease to null
+- Plant types include: leaf, flower, fruit, vegetable, root, stem, bark, seed, mushroom, fungi, grass, succulent, etc.
+- If the plant appears healthy with no disease, set name to "Healthy"
+- For non-plants, plant_type should be null
+""".trimIndent()
+
+            val content = listOf(
+                ContentItem.TextContent(text = prompt),
+                ContentItem.ImageContent(
+                    imageUrl = ImageUrl(url = "data:image/jpeg;base64,$base64Image")
+                )
+            )
+
+            val messages = listOf(
+                ChatMessage(role = "user", content = content)
+            )
+
+            val request = ChatCompletionRequest(
+                model = ApiServiceProvider.detectionModel,
+                messages = messages,
+                responseFormat = ResponseFormat("json_object")
+            )
+
+            val response = ApiServiceProvider.detectionApi.analyzePlantImage(request)
+
+            if (!response.isSuccessful) {
+                throw Exception("API call failed: ${response.code()} - ${response.message()}")
+            }
+
+            val responseBody = response.body()
+                ?: throw Exception("Empty response from API")
+
+            val contentStr = responseBody.choices.firstOrNull()?.message?.content
+                ?: throw Exception("No content in API response")
+
+            parsePlantDetectionResponse(contentStr)
+        }
+    }
+
+    /**
+     * Parses the plant detection response from LLM
+     */
+    private fun parsePlantDetectionResponse(jsonContent: String): PlantAnalysisResult {
+        val adapter = moshi.adapter(PlantDetectionResult::class.java)
+        val result = adapter.fromJson(jsonContent)
+            ?: throw Exception("Failed to parse API response")
+
+        val disease = result.disease?.let { diseaseResult ->
+            Disease(
+                id = diseaseResult.id,
+                name = diseaseResult.name,
+                description = diseaseResult.description,
+                confidence = diseaseResult.confidence,
+                affectedAreaPercent = diseaseResult.affectedAreaPercent,
+                treatments = diseaseResult.treatments.map { treatmentResult ->
+                    Treatment(
+                        id = treatmentResult.id,
+                        name = treatmentResult.name,
+                        description = treatmentResult.description,
+                        type = if (treatmentResult.type.equals("CHEMICAL", ignoreCase = true))
+                            TreatmentType.CHEMICAL else TreatmentType.ORGANIC,
+                        applicationMethod = treatmentResult.applicationMethod,
+                        frequency = treatmentResult.frequency
+                    )
+                }
+            )
+        }
+
+        return PlantAnalysisResult(
+            isPlant = result.isPlant,
+            plantType = result.plantType,
+            plantDescription = result.plantDescription,
+            disease = disease
+        )
     }
 
     /**

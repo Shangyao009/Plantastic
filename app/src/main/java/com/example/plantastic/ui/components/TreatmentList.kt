@@ -145,7 +145,7 @@ private fun TreatmentItem(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
                         text = "Application",
                         fontSize = 11.sp,
@@ -159,12 +159,13 @@ private fun TreatmentItem(
                         fontSize = 12.sp,
                         maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
-                        lineHeight = 16.sp
+                        lineHeight = 16.sp,
+                        softWrap = true
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Column(
-                    modifier = Modifier.widthIn(min = 80.dp),
+                    modifier = Modifier.width(80.dp),
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(

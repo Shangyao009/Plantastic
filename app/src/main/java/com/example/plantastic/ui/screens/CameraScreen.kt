@@ -167,7 +167,7 @@ private fun CameraContent(
             )
         }
 
-        // Camera frame - dark overlay with clear center square
+        // Camera frame - dark overlay with clear center square and visible border
         val screenWidth = LocalContext.current.resources.displayMetrics.widthPixels
         val squareSize = (screenWidth * 0.75f).dp
 
@@ -184,6 +184,8 @@ private fun CameraContent(
                 val centerY = canvasHeight / 2
                 val squareSizePx = squareSize.toPx()
                 val halfSquare = squareSizePx / 2
+                val cornerLength = squareSizePx * 0.15f
+                val strokeWidth = 4.dp.toPx()
 
                 // Draw semi-transparent dark overlay
                 drawRect(
@@ -196,6 +198,65 @@ private fun CameraContent(
                     color = Color.Transparent,
                     topLeft = Offset(centerX - halfSquare, centerY - halfSquare),
                     size = Size(squareSizePx, squareSizePx)
+                )
+
+                // Draw corner brackets (viewfinder style)
+                val cornerColor = Color.White
+
+                // Top-left corner
+                drawLine(
+                    color = cornerColor,
+                    start = Offset(centerX - halfSquare, centerY - halfSquare + cornerLength),
+                    end = Offset(centerX - halfSquare, centerY - halfSquare),
+                    strokeWidth = strokeWidth
+                )
+                drawLine(
+                    color = cornerColor,
+                    start = Offset(centerX - halfSquare, centerY - halfSquare),
+                    end = Offset(centerX - halfSquare + cornerLength, centerY - halfSquare),
+                    strokeWidth = strokeWidth
+                )
+
+                // Top-right corner
+                drawLine(
+                    color = cornerColor,
+                    start = Offset(centerX + halfSquare - cornerLength, centerY - halfSquare),
+                    end = Offset(centerX + halfSquare, centerY - halfSquare),
+                    strokeWidth = strokeWidth
+                )
+                drawLine(
+                    color = cornerColor,
+                    start = Offset(centerX + halfSquare, centerY - halfSquare),
+                    end = Offset(centerX + halfSquare, centerY - halfSquare + cornerLength),
+                    strokeWidth = strokeWidth
+                )
+
+                // Bottom-left corner
+                drawLine(
+                    color = cornerColor,
+                    start = Offset(centerX - halfSquare, centerY + halfSquare - cornerLength),
+                    end = Offset(centerX - halfSquare, centerY + halfSquare),
+                    strokeWidth = strokeWidth
+                )
+                drawLine(
+                    color = cornerColor,
+                    start = Offset(centerX - halfSquare, centerY + halfSquare),
+                    end = Offset(centerX - halfSquare + cornerLength, centerY + halfSquare),
+                    strokeWidth = strokeWidth
+                )
+
+                // Bottom-right corner
+                drawLine(
+                    color = cornerColor,
+                    start = Offset(centerX + halfSquare - cornerLength, centerY + halfSquare),
+                    end = Offset(centerX + halfSquare, centerY + halfSquare),
+                    strokeWidth = strokeWidth
+                )
+                drawLine(
+                    color = cornerColor,
+                    start = Offset(centerX + halfSquare, centerY + halfSquare - cornerLength),
+                    end = Offset(centerX + halfSquare, centerY + halfSquare),
+                    strokeWidth = strokeWidth
                 )
             }
         }

@@ -50,7 +50,6 @@ import java.util.Locale
 fun HomeScreen(
     onScanClick: () -> Unit,
     onHistoryItemClick: (String) -> Unit,
-    onChatClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val recentScans = ScanHistoryRepository.getScanResults().take(5)
@@ -87,8 +86,7 @@ fun HomeScreen(
                 items(recentScans) { scan ->
                     RecentScanItem(
                         scanResult = scan,
-                        onClick = { onHistoryItemClick(scan.id) },
-                        onChatClick = { onChatClick(scan.id) }
+                        onClick = { onHistoryItemClick(scan.id) }
                     )
                 }
 
@@ -190,7 +188,6 @@ private fun SectionHeader(
 private fun RecentScanItem(
     scanResult: ScanResult,
     onClick: () -> Unit,
-    onChatClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isHealthy = scanResult.disease.name == "Healthy"
@@ -284,25 +281,6 @@ private fun RecentScanItem(
                         )
                     }
                 }
-            }
-
-            // Chat button
-            IconButton(
-                onClick = onChatClick,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(GradientStart, GradientEnd)
-                        )
-                    )
-            ) {
-                Text(
-                    text = "\uD83D\uDCAC",
-                    fontSize = 16.sp,
-                    color = Color.White
-                )
             }
         }
     }

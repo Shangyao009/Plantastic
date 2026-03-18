@@ -22,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,7 +50,6 @@ import java.util.Locale
 @Composable
 fun HistoryScreen(
     onItemClick: (String) -> Unit,
-    onChatClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scanResults = ScanHistoryRepository.getScanResults()
@@ -98,8 +96,7 @@ fun HistoryScreen(
                 items(scanResults, key = { it.id }) { scan ->
                     HistoryItem(
                         scanResult = scan,
-                        onClick = { onItemClick(scan.id) },
-                        onChatClick = { onChatClick(scan.id) }
+                        onClick = { onItemClick(scan.id) }
                     )
                 }
 
@@ -115,7 +112,6 @@ fun HistoryScreen(
 private fun HistoryItem(
     scanResult: ScanResult,
     onClick: () -> Unit,
-    onChatClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isHealthy = scanResult.disease.name == "Healthy"
@@ -207,25 +203,6 @@ private fun HistoryItem(
                             )
                         }
                     }
-                }
-
-                // Chat button
-                IconButton(
-                    onClick = onChatClick,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(GradientStart, GradientEnd)
-                            )
-                        )
-                ) {
-                    Text(
-                        text = "\uD83D\uDCAC",
-                        fontSize = 18.sp,
-                        color = Color.White
-                    )
                 }
             }
         }

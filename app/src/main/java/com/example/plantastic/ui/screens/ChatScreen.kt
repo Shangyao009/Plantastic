@@ -54,6 +54,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.plantastic.data.ChatHistoryRepository
+import com.example.plantastic.data.model.ChatMessage
 import com.example.plantastic.data.model.Disease
 import com.example.plantastic.domain.DiseaseDetector
 import com.example.plantastic.ui.theme.GradientEnd
@@ -69,7 +71,12 @@ fun ChatScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val messages = remember { mutableStateListOf<ChatMsg>() }
+    val messages = remember(scanId) {
+        val saved = ChatHistoryRepository.getMessages(context, scanId)
+        mutableStateListOf<ChatMsg>().apply {
+            addAll(saved.map { ChatMsg(it.text, it.isUser) })
+        }
+    }
     var inputText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
@@ -81,6 +88,16 @@ fun ChatScreen(
 
     val disease = scanResult?.disease
     val imageUri = scanResult?.imageUri
+
+    // Helper to add a message and persist it
+    fun addMessage(text: String, isUser: Boolean) {
+        messages.add(ChatMsg(text, isUser))
+        ChatHistoryRepository.addMessage(
+            context,
+            scanId,
+            ChatMessage(text = text, isUser = isUser)
+        )
+    }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -222,11 +239,11 @@ fun ChatScreen(
                                 val question = suggestion
                                 scope.launch {
                                     isLoading = true
-                                    messages.add(ChatMsg(question, isUser = true))
+                                    addMessage(question, isUser = true)
                                     val answer = DiseaseDetector.chatAboutPlant(
                                         context, imageUri, disease, question
                                     )
-                                    messages.add(ChatMsg(answer, isUser = false))
+                                    addMessage(answer, isUser = false)
                                     isLoading = false
                                 }
                             }
@@ -303,11 +320,11 @@ fun ChatScreen(
                                 inputText = ""
                                 scope.launch {
                                     isLoading = true
-                                    messages.add(ChatMsg(question, isUser = true))
+                                    addMessage(question, isUser = true)
                                     val answer = DiseaseDetector.chatAboutPlant(
                                         context, imageUri, disease, question
                                     )
-                                    messages.add(ChatMsg(answer, isUser = false))
+                                    addMessage(answer, isUser = false)
                                     isLoading = false
                                 }
                             }
@@ -331,11 +348,11 @@ fun ChatScreen(
                         if (inputText.isNotBlank() && !isLoading && disease != null && imageUri != null) {
                             scope.launch {
                                 isLoading = true
-                                messages.add(ChatMsg(inputText, isUser = true))
+                                addMessage(inputText, isUser = true)
                                 val answer = DiseaseDetector.chatAboutPlant(
                                     context, imageUri, disease, inputText
                                 )
-                                messages.add(ChatMsg(answer, isUser = false))
+                                addMessage(answer, isUser = false)
                                 inputText = ""
                                 isLoading = false
                             }

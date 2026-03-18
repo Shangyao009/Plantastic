@@ -78,9 +78,6 @@ fun NavigationGraph(
                     },
                     onHistoryItemClick = { scanId ->
                         navController.navigate(Screen.ScanResultDetail.createRoute(scanId))
-                    },
-                    onChatClick = { scanId ->
-                        navController.navigate(Screen.Chat.createRoute(scanId))
                     }
                 )
             }
@@ -150,9 +147,6 @@ fun NavigationGraph(
                 HistoryScreen(
                     onItemClick = { scanId ->
                         navController.navigate(Screen.ScanResultDetail.createRoute(scanId))
-                    },
-                    onChatClick = { scanId ->
-                        navController.navigate(Screen.Chat.createRoute(scanId))
                     }
                 )
             }

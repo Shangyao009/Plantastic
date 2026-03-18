@@ -88,8 +88,13 @@ fun ResultScreen(
     var isNotPlant by remember { mutableStateOf(false) }
     var isCheckingPlant by remember { mutableStateOf(true) }
     val context = LocalContext.current
+    var hasAnalyzed by remember { mutableStateOf(false) }
 
     LaunchedEffect(imageUri) {
+        // Only analyze once — guard against re-triggering when navigating back from Chat
+        if (hasAnalyzed) return@LaunchedEffect
+        hasAnalyzed = true
+
         // First, detect if it's a plant and identify disease using LLM
         val result = DiseaseDetector.detectPlantAndDisease(context, imageUri)
         plantAnalysisResult = result

@@ -116,8 +116,8 @@ IMPORTANT:
 """.trimIndent()
 
             val content = listOf(
-                ContentItem.TextContent(text = prompt),
-                ContentItem.ImageContent(
+                ContentItem.textContent(text = prompt),
+                ContentItem.imageContent(
                     imageUrl = ImageUrl(url = "data:image/jpeg;base64,$base64Image")
                 )
             )
@@ -193,7 +193,7 @@ IMPORTANT:
             val base64Image = encodeImageToBase64(context, imageUri)
 
             val content = listOf(
-                ContentItem.TextContent(
+                ContentItem.textContent(
                     text = """Analyze this plant image and identify any diseases. Return a JSON object with the following structure:
 {
   "disease": {
@@ -227,7 +227,7 @@ If the plant appears healthy, return:
   }
 }"""
                 ),
-                ContentItem.ImageContent(
+                ContentItem.imageContent(
                     imageUrl = ImageUrl(url = "data:image/jpeg;base64,$base64Image")
                 )
             )
@@ -368,9 +368,9 @@ Answer the user's question based on this information. Be helpful, concise, and f
             """.trimIndent()
 
             val content = listOf(
-                ContentItem.TextContent(text = systemPrompt),
-                ContentItem.ImageContent(imageUrl = ImageUrl(url = "data:image/jpeg;base64,$base64Image")),
-                ContentItem.TextContent(text = userMessage)
+                ContentItem.textContent(text = systemPrompt),
+                ContentItem.imageContent(imageUrl = ImageUrl(url = "data:image/jpeg;base64,$base64Image")),
+                ContentItem.textContent(text = userMessage)
             )
 
             val messages = listOf(

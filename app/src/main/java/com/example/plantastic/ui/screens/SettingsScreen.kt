@@ -118,7 +118,7 @@ fun SettingsScreen(
                             messages = listOf(
                                 ChatMessage(
                                     role = "user",
-                                    content = listOf(ContentItem.TextContent(text = "Hi"))
+                                    content = listOf(ContentItem.textContent(text = "Hi"))
                                 )
                             ),
                             maxTokens = 10
@@ -164,7 +164,7 @@ fun SettingsScreen(
                             messages = listOf(
                                 ChatMessage(
                                     role = "user",
-                                    content = listOf(ContentItem.TextContent(text = "Hi"))
+                                    content = listOf(ContentItem.textContent(text = "Hi"))
                                 )
                             ),
                             maxTokens = 10
@@ -210,7 +210,7 @@ fun SettingsScreen(
                             messages = listOf(
                                 ChatMessage(
                                     role = "user",
-                                    content = listOf(ContentItem.TextContent(text = "Hi"))
+                                    content = listOf(ContentItem.textContent(text = "Hi"))
                                 )
                             ),
                             maxTokens = 10

@@ -21,19 +21,18 @@ data class ChatMessage(
 )
 
 /**
- * Sealed class for content items in chat messages.
- * Uses Moshi's KotlinJsonAdapterFactory for serialization.
+ * Content item for chat messages.
+ * Uses type discriminator to distinguish between text and image content.
  */
-sealed class ContentItem {
-    data class TextContent(
-        val type: String = "text",
-        val text: String
-    ) : ContentItem()
-
-    data class ImageContent(
-        val type: String = "image_url",
-        val imageUrl: ImageUrl
-    ) : ContentItem()
+data class ContentItem(
+    val type: String,
+    val text: String? = null,
+    val image_url: ImageUrl? = null
+) {
+    companion object {
+        fun textContent(text: String) = ContentItem(type = "text", text = text)
+        fun imageContent(imageUrl: ImageUrl) = ContentItem(type = "image_url", image_url = imageUrl)
+    }
 }
 
 @JsonClass(generateAdapter = true)

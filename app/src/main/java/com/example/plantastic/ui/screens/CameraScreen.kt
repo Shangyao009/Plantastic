@@ -56,6 +56,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
+import android.media.ExifInterface
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -406,16 +407,39 @@ private fun cropToSquare(
 ): Uri {
     val original = BitmapFactory.decodeFile(sourceFile.absolutePath)
 
+    // Read EXIF orientation and apply rotation if needed
+    val rotated = try {
+        val exif = ExifInterface(sourceFile.absolutePath)
+        val orientation = exif.getAttributeInt(
+            ExifInterface.TAG_ORIENTATION,
+            ExifInterface.ORIENTATION_NORMAL
+        )
+        val matrix = android.graphics.Matrix()
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
+            ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
+            else -> null
+        }?.let { m ->
+            Bitmap.createBitmap(original, 0, 0, original.width, original.height, matrix, true)
+        } ?: original
+    } catch (e: Exception) {
+        original
+    }
+
     // The overlay square is 75 % of screen width, centred.
     // Map that fraction to the bitmap's shorter dimension.
-    val bitmapMin = minOf(original.width, original.height)
+    val bitmapMin = minOf(rotated.width, rotated.height)
     val cropSize  = (bitmapMin * 0.75f).toInt()
 
     // Centre the crop in the bitmap
-    val cropX = (original.width  - cropSize) / 2
-    val cropY = (original.height - cropSize) / 2
+    val cropX = (rotated.width  - cropSize) / 2
+    val cropY = (rotated.height - cropSize) / 2
 
-    val cropped = Bitmap.createBitmap(original, cropX, cropY, cropSize, cropSize)
+    val cropped = Bitmap.createBitmap(rotated, cropX, cropY, cropSize, cropSize)
+    if (rotated != original) rotated.recycle()
     original.recycle()
 
     // Save the cropped image
